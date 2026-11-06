@@ -27,8 +27,9 @@ docker --version
 docker compose version
 ```
 
-Do not expose the administration port directly to an untrusted network. The
-provided Compose configuration publishes it on host loopback only.
+The provided Compose configuration publishes the administration website on
+host port `8083`. Allow access only from the trusted LAN; do not expose this
+port to the Internet.
 
 ## 2. Obtain the source
 
@@ -57,9 +58,9 @@ GATEWAY_UID=1000
 GATEWAY_GID=1000
 ```
 
-For the named Docker volume, the defaults normally need no adjustment. When a
-NAS directory is mounted directly into `/data`, use the owner of that directory.
-On Linux, determine the values with:
+The Compose configuration bind-mounts the host directory `./data` into `/data`.
+Use the owner of that directory for the container identity. On Linux, determine
+the values with:
 
 ```bash
 id -u
@@ -96,7 +97,7 @@ The image includes the optional Serial RTU dependency. The default ports are:
 | Purpose | Host binding | Container port |
 |---|---|---:|
 | TROVIS-VIEW Modbus TCP listener | all interfaces, port `7112` | `7112` |
-| Administration website | `127.0.0.1:8080` | `8080` |
+| Administration website | all interfaces, port `8083` | `8080` |
 
 ## 5. Start the gateway
 
@@ -110,7 +111,7 @@ Confirm that the container is running and healthy:
 
 ```bash
 docker compose ps
-curl http://127.0.0.1:8080/health
+curl http://127.0.0.1:8083/health
 ```
 
 The health endpoint should return:
@@ -127,20 +128,14 @@ docker compose logs --tail=100 gateway
 
 ## 6. Open the administration website
 
-On the Docker host, open:
+From a computer in the trusted LAN, open:
 
 ```text
-http://127.0.0.1:8080/
+http://NAS-IP:8083/
 ```
 
-For secure access from another computer, keep port 8080 bound to loopback and
-use an SSH tunnel:
-
-```bash
-ssh -L 8080:127.0.0.1:8080 user@gateway-host
-```
-
-Then open `http://127.0.0.1:8080/` on the local computer.
+Replace `NAS-IP` with the IP address or trusted DNS name of the Docker host.
+Restrict host firewall access to the required LAN clients.
 
 ## 7. Create the controller profile
 
@@ -154,9 +149,12 @@ Enter the settings for the connection from the gateway to the controller:
    must match the actual controller.
 5. Optionally store the access key. It remains in pass-through mode and is not
    injected into Modbus traffic.
-6. Review timeouts, request spacing, and retry values.
-7. Select **Save**.
-8. Select **Activate** if this is not already the active profile.
+6. Keep **Maximum connection age** at `25 s` for the observed TROVIS controller behavior. The
+   gateway then renews the TCP connection before the controller's approximately 30-second session
+   boundary. Set it to `0` only when the controller supports unrestricted persistent sessions.
+7. Review the remaining timeouts, request spacing, and retry values.
+8. Select **Save**.
+9. Select **Activate** if this is not already the active profile.
 
 Only one profile is active at a time. Changing the active profile does not
 require a rebuild or container restart.
@@ -203,8 +201,9 @@ Follow live logs when diagnosing communication:
 docker compose logs -f gateway
 ```
 
-Raw Modbus PDU tracing is disabled by default. Enable `MODBUS_TRACE=1` in
-`compose.yaml` only for controlled diagnostics, then recreate the container:
+The current NAS Compose configuration enables raw Modbus PDU tracing with
+`MODBUS_TRACE=1` for diagnostics. Logs can contain protocol data. Set it to `0`
+after troubleshooting and recreate the container:
 
 ```bash
 docker compose up -d --force-recreate
@@ -212,16 +211,9 @@ docker compose up -d --force-recreate
 
 ## 11. Persistence and backups
 
-Profiles are stored in `/data/config.json` inside the logical `gateway-data`
-volume. With the fixed Compose project name, Docker creates it as
-`trovis-proxy_gateway-data`. Ordinary restarts, rebuilds, and
-`docker compose down` preserve it.
-
-Never use this command unless you intentionally want to delete all profiles:
-
-```text
-docker compose down -v
-```
+Profiles are stored in `./data/config.json` on the Docker host and mounted as
+`/data/config.json` in the container. Ordinary restarts, rebuilds, and
+`docker compose down` preserve this bind-mounted directory.
 
 Create a backup after configuring the gateway:
 
@@ -232,12 +224,13 @@ chmod 600 gateway-config-backup.json
 
 The backup contains the stored access key in clear text. Protect it accordingly.
 
-When upgrading an existing named volume from the former UID `10001` default,
-change its ownership once after building the new image and before starting it:
+Before the first start, create the bind-mount directory and assign it to the
+configured container UID and GID:
 
 ```bash
-docker compose run --rm --user root --entrypoint sh gateway \
-  -c 'chown -R 1000:1000 /data'
+mkdir -p data
+sudo chown -R 1000:1000 data
+sudo chmod 755 data
 ```
 
 Replace `1000:1000` when `.env` contains different values.
@@ -261,7 +254,7 @@ docker compose up -d --build
 docker compose ps
 ```
 
-The named data volume remains attached to the replacement container.
+The bind-mounted `./data` directory remains attached to the replacement container.
 
 ## 13. Serial RTU with Docker
 
@@ -314,7 +307,7 @@ use an absolute configuration path.
 ### The website does not open
 
 Check `docker compose ps`, the gateway logs, and whether another process already
-uses port `8080`.
+uses host port `8083`.
 
 ### TROVIS-VIEW cannot connect
 

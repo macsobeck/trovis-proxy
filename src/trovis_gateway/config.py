@@ -11,7 +11,6 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
-
 DEFAULT_LISTEN_PORT = 7112
 
 
@@ -30,6 +29,7 @@ class TimingSettings(BaseModel):
     minimum_request_interval_s: float = Field(default=0.1, ge=0, le=30)
     connect_settle_delay_s: float = Field(default=0.25, ge=0, le=30)
     reconnect_delay_s: float = Field(default=1.0, ge=0, le=120)
+    max_connection_age_s: float = Field(default=25.0, ge=0, le=86_400)
 
 
 class RetrySettings(BaseModel):
@@ -90,6 +90,7 @@ class ControllerProfile(BaseModel):
             self.timing.connect_timeout_s,
             self.timing.response_timeout_s,
             self.timing.connect_settle_delay_s,
+            self.timing.max_connection_age_s,
         )
 
     def target_label(self) -> str:

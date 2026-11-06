@@ -6,8 +6,8 @@ This repository contains a generic, locally operated communication gateway:
 TROVIS-VIEW → Modbus TCP → Gateway → Modbus TCP / RTU-over-TCP / Serial RTU → controller
 ```
 
-The proxy forwards Modbus PDUs without controller- or firmware-specific branches. The
-TROVIS 5573-1 FW 3.09 code in `src/trovis_manager/` remains a separate, read-only
+The proxy forwards Modbus PDUs unchanged and has no controller- or firmware-specific address
+translation. The TROVIS 5573-1 FW 3.09 code in `src/trovis_manager/` remains a separate, read-only
 integration and research harness; it is not part of the proxy core.
 
 ## Run the gateway
@@ -36,9 +36,11 @@ docker compose up --build
 Compose builds the explicitly tagged local image
 `trovis-proxy:0.1.0` from the repository's `Dockerfile`. The container defaults
 to UID/GID `1000:1000`; both values can be changed in `.env` for NAS bind mounts.
+The administration website is published to the LAN on host port `8083`.
 
-Profile data persists at `/data/config.json` with mode `0600`. A stored access key is masked
-in the API and UI and is not logged, exposed as a metric, or injected into protocol traffic.
+Profile data persists in the host directory `./data` and appears as `/data/config.json` in the
+container with mode `0600`. A stored access key is masked in the API and UI and is not logged,
+exposed as a metric, or injected into protocol traffic.
 
 ## Safety model
 
@@ -47,6 +49,9 @@ in the API and UI and is not logged, exposed as a metric, or injected into proto
 - FC01–04 reads may retry after a clear transport failure.
 - FC05/06/0F/10 writes never retry after an ambiguous result.
 - Unknown and vendor-specific function codes are forwarded opaquely and are traceable.
+- All Modbus PDUs, including FC01 addresses, are forwarded unchanged.
+- TCP connections are renewed after 25 seconds by default, before the observed 30-second controller
+  session boundary; renewal occurs before a request and never retries an ambiguous write.
 - All requests to a controller are serialized and paced.
 
 See [gateway architecture](docs/gateway/architecture.md),

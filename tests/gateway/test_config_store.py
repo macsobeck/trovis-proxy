@@ -52,3 +52,50 @@ class ConfigStoreTests(unittest.TestCase):
         self.assertEqual(config.active_profile().target_label(), "/dev/ttyUSB9")
         fields = set(ControllerProfile.model_fields)
         self.assertFalse(fields & {"model", "firmware", "downstream_host", "listen_port"})
+
+    def test_legacy_fc01_compatibility_is_removed_on_load_and_upsert(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "1.0",
+                        "active_profile_id": "legacy",
+                        "profiles": [
+                            {
+                                "id": "legacy",
+                                "name": "Legacy",
+                                "host": "192.0.2.1",
+                                "compatibility": {
+                                    "fc01_address_translation_enabled": True,
+                                    "fc01_address_offset": 1024,
+                                },
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            store = ConfigStore(path)
+
+            loaded = store.load()
+            public = store.public_document()["profiles"][0]
+            persisted = json.loads(path.read_text(encoding="utf-8"))["profiles"][0]
+
+            self.assertEqual(loaded.active_profile().timing.max_connection_age_s, 25)
+            self.assertNotIn("compatibility", ControllerProfile.model_fields)
+            self.assertNotIn("compatibility", public)
+            self.assertNotIn("compatibility", persisted)
+
+            store.upsert_profile(
+                {
+                    **public,
+                    "compatibility": {
+                        "fc01_address_translation_enabled": True,
+                        "fc01_address_offset": 1024,
+                    },
+                },
+                "legacy",
+            )
+            persisted = json.loads(path.read_text(encoding="utf-8"))["profiles"][0]
+            self.assertNotIn("compatibility", persisted)

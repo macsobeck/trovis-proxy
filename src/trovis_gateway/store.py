@@ -14,6 +14,21 @@ from pydantic import SecretStr
 from .config import ControllerProfile, GatewayConfig
 
 
+def _drop_legacy_compatibility(payload: Any) -> bool:
+    """Remove the retired FC01 settings from persisted or cached documents."""
+    if not isinstance(payload, dict):
+        return False
+    profiles = payload.get("profiles")
+    if not isinstance(profiles, list):
+        return False
+    changed = False
+    for profile in profiles:
+        if isinstance(profile, dict) and "compatibility" in profile:
+            profile.pop("compatibility")
+            changed = True
+    return changed
+
+
 def _profile_storage(profile: ControllerProfile) -> dict[str, Any]:
     payload = profile.model_dump(mode="json", exclude={"access_key"})
     payload["access_key"] = (
@@ -41,7 +56,10 @@ class ConfigStore:
         with self._lock:
             if self.path.exists():
                 payload = json.loads(self.path.read_text(encoding="utf-8"))
+                migrated = _drop_legacy_compatibility(payload)
                 self._config = GatewayConfig.model_validate(payload)
+                if migrated:
+                    self._save_locked()
             return self.snapshot()
 
     def snapshot(self) -> GatewayConfig:
@@ -72,6 +90,7 @@ class ConfigStore:
                 None,
             )
             candidate = dict(payload)
+            candidate.pop("compatibility", None)
             candidate.pop("access_key_configured", None)
             clear_secret = bool(candidate.pop("clear_access_key", False))
             submitted_secret = candidate.pop("access_key", None)

@@ -70,6 +70,8 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(profile["access_key_configured"])
         self.assertNotIn("secret-value", body)
         self.assertNotIn("listen_port", profile)
+        self.assertNotIn("compatibility", profile)
+        self.assertEqual(profile["timing"]["max_connection_age_s"], 25)
         _, status_body = await self.fetch("/api/status")
         self.assertNotIn("secret-value", status_body)
 
@@ -80,6 +82,9 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('class="parameter-row"', html)
         self.assertIn('class="parameter-label"', html)
         self.assertIn('class="parameter-value"', html)
+        self.assertNotIn('id="fc01-translation-enabled"', html)
+        self.assertNotIn('id="fc01-address-offset"', html)
+        self.assertIn('id="max-connection-age"', html)
         self.assertNotIn("<details", html)
         self.assertNotIn('id="listen-port"', html)
         self.assertNotIn('id="downstream-unit-id"', html)

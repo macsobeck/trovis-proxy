@@ -315,6 +315,7 @@ class UpstreamRouter:
         self._fingerprint: tuple[object, ...] | None = None
         self._last_request_at = 0.0
         self._last_failure_at = 0.0
+        self._connected_at = 0.0
         self._ever_connected = False
 
     async def close(self) -> None:
@@ -322,6 +323,7 @@ class UpstreamRouter:
             await self._backend.close()
         self._backend = None
         self._fingerprint = None
+        self._connected_at = 0.0
         self.metrics.set("upstream_connected", False)
 
     async def request(
@@ -441,11 +443,25 @@ class UpstreamRouter:
             self._fingerprint = fingerprint
         assert self._backend is not None
         if self._backend.connected:
-            return
+            max_age = profile.timing.max_connection_age_s
+            connection_expired = (
+                profile.transport in {TransportType.MODBUS_TCP, TransportType.RTU_OVER_TCP}
+                and max_age > 0
+                and self._connected_at > 0
+                and monotonic() - self._connected_at >= max_age
+            )
+            if not connection_expired:
+                return
+            await self.close()
+            if profile.timing.reconnect_delay_s:
+                await asyncio.sleep(profile.timing.reconnect_delay_s)
+            self._backend = _backend(profile)
+            self._fingerprint = fingerprint
         since_failure = monotonic() - self._last_failure_at
         if self._last_failure_at and since_failure < profile.timing.reconnect_delay_s:
             await asyncio.sleep(profile.timing.reconnect_delay_s - since_failure)
         await self._backend.connect()
+        self._connected_at = monotonic()
         if self._ever_connected:
             self.metrics.increment("reconnects")
         self._ever_connected = True

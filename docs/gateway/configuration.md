@@ -7,7 +7,15 @@ profiles may exist; exactly zero or one is active.
 Each profile contains transport, TCP endpoint or serial parameters, upstream Modbus Unit ID,
 timeouts, pacing, retry limits, and an optional access key. The API returns only a boolean saying
 whether a key exists. An empty key field preserves the stored value; the explicit delete checkbox
-removes it. `key_mode` is fixed to `pass-through`, so the stored key is not injected.
+removes it. `key_mode` is fixed to `pass-through`, so the stored key is not injected. Modbus PDUs
+and addresses are forwarded unchanged. Obsolete FC01 offset settings from earlier builds are
+removed automatically when the configuration is loaded.
+
+TCP profiles also limit a persistent upstream connection to `25` seconds by default. Before the
+next request would use an older connection, the gateway closes it, observes the configured
+reconnect delay, and opens a fresh connection. This avoids the approximately 30-second session
+boundary observed in controller captures. The renewal happens before a request is sent, so it does
+not repeat an ambiguous write. Set the maximum connection age to `0` to disable this behavior.
 
 Infrastructure settings are deliberately separate:
 

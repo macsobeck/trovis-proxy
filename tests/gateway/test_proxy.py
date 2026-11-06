@@ -6,7 +6,6 @@ import unittest
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
-from trovis_gateway.config import ControllerProfile
 from trovis_gateway.metrics import GatewayMetrics
 from trovis_gateway.protocol import (
     ModbusTcpAdu,
@@ -19,7 +18,6 @@ from trovis_gateway.proxy import ModbusProxy
 from trovis_gateway.store import ConfigStore
 from trovis_gateway.trace import GatewayTrace
 from trovis_gateway.upstream import UpstreamRouter
-
 
 Handler = Callable[[ModbusTcpAdu, asyncio.StreamWriter], Awaitable[None]]
 
@@ -151,6 +149,79 @@ class ProxyTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.pdu, bytes.fromhex("0302002a"))
         self.assertEqual(len(controller.requests), 2)
         self.assertEqual(self.metrics.snapshot()["retries"], 1)
+
+    async def test_expired_tcp_connection_is_replaced_before_next_write(self) -> None:
+        connections: list[list[bytes]] = []
+
+        async def persistent_client(
+            reader: asyncio.StreamReader,
+            writer: asyncio.StreamWriter,
+        ) -> None:
+            requests: list[bytes] = []
+            connections.append(requests)
+            try:
+                while True:
+                    request = await read_tcp_adu(reader)
+                    requests.append(request.pdu)
+                    writer.write(
+                        encode_tcp_adu(
+                            request.transaction_id,
+                            request.unit_id,
+                            request.pdu,
+                        )
+                    )
+                    await writer.drain()
+            except (asyncio.IncompleteReadError, ConnectionError):
+                pass
+            finally:
+                writer.close()
+                await writer.wait_closed()
+
+        server = await asyncio.start_server(persistent_client, "127.0.0.1", 0)
+        self.raw_servers.append(server)
+        assert server.sockets
+        port = int(server.sockets[0].getsockname()[1])
+        self.store.upsert_profile(
+            {
+                "name": "Connection lifetime",
+                "transport": "modbus_tcp",
+                "host": "127.0.0.1",
+                "port": port,
+                "upstream_unit_id": 12,
+                "timing": {
+                    "connect_timeout_s": 0.2,
+                    "response_timeout_s": 0.2,
+                    "total_request_timeout_s": 1,
+                    "minimum_request_interval_s": 0,
+                    "connect_settle_delay_s": 0,
+                    "reconnect_delay_s": 0.01,
+                    "max_connection_age_s": 0.02,
+                },
+            }
+        )
+        await self.proxy.start()
+
+        first_write = bytes.fromhex("06009006c4")
+        second_write = bytes.fromhex("0600041732")
+        await self.request(first_write)
+        await asyncio.sleep(0.03)
+        response = await self.request(second_write)
+
+        self.assertEqual(response.pdu, second_write)
+        self.assertEqual(connections, [[first_write], [second_write]])
+        self.assertEqual(self.metrics.snapshot()["reconnects"], 1)
+
+    async def test_fc01_is_forwarded_unchanged(self) -> None:
+        async def echo(request: ModbusTcpAdu, writer: asyncio.StreamWriter) -> None:
+            writer.write(encode_tcp_adu(request.transaction_id, request.unit_id, request.pdu))
+            await writer.drain()
+
+        controller = await self.start_controller(echo)
+        await self.configure(controller)
+
+        await self.request(bytes.fromhex("0100000009"))
+
+        self.assertEqual(controller.requests[0].pdu, bytes.fromhex("0100000009"))
 
     async def test_write_timeout_after_send_is_not_retried(self) -> None:
         async def never_answer(request: ModbusTcpAdu, writer: asyncio.StreamWriter) -> None:
