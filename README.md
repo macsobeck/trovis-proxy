@@ -31,7 +31,9 @@ integration and research harness; it is not part of the proxy core.
 For reliable operation with a USR serial-to-Ethernet adapter, configure Socket A as
 `TCP Server` and set its protocol mode to `None`. Do not select `ModbusTCP` in the adapter.
 In the proxy controller profile, select `RTU-over-TCP`. This combination keeps the adapter in
-transparent mode and lets the proxy handle the Modbus TCP-to-RTU framing.
+transparent mode and lets the proxy handle the Modbus TCP-to-RTU framing. Using the adapter's
+`ModbusTCP` mode with TROVIS-VIEW can cause unstable connections and failed reads and writes to
+heating controllers such as the SAMSON TROVIS 5573-1xxx series.
 
 ![USR adapter configured for transparent RTU-over-TCP operation](docs/images/usr-adapter-settings.png)
 
