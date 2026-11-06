@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>TROVIS Communication Gateway</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#status" aria-label="Gateway-Startseite">
+      <span class="brand-mark" aria-hidden="true">TG</span>
+      <span><strong>TROVIS</strong><small>Communication Gateway</small></span>
+    </a>
+    <nav aria-label="Hauptnavigation">
+      <button class="nav-button active" data-view="status">Status</button>
+      <button class="nav-button" data-view="profiles">Reglerverbindung</button>
+    </nav>
+    <div class="health"><span class="health-dot" id="health-dot"></span><span id="health-label">wird geladen</span></div>
+  </header>
+
+  <main>
+    <section id="status-view" class="view" aria-labelledby="status-title">
+      <div class="page-heading">
+        <div><p class="eyebrow">Betriebsübersicht</p><h1 id="status-title">Gateway-Status</h1></div>
+        <button class="secondary" id="refresh-status">Aktualisieren</button>
+      </div>
+
+      <div class="status-columns">
+        <article class="card parameter-cluster status-cluster">
+          <header class="cluster-heading">
+            <div><p class="cluster-kicker">Downstream</p><h2>Gateway</h2></div>
+            <span class="status-indicator status-indicator-ok">Bereit</span>
+          </header>
+          <div class="parameter-list status-list">
+            <div class="parameter-row"><span class="parameter-label">TROVIS-VIEW Listener</span><strong class="parameter-output" id="listener">—</strong></div>
+            <div class="parameter-row"><span class="parameter-label">Aktive Clients</span><strong class="parameter-output" id="clients">0</strong></div>
+            <div class="parameter-row"><span class="parameter-label">Anfragen</span><strong class="parameter-output" id="requests">0</strong></div>
+            <div class="parameter-row"><span class="parameter-label">Warteschlange</span><strong class="parameter-output" id="queue">0</strong></div>
+          </div>
+        </article>
+
+        <article class="card parameter-cluster status-cluster">
+          <header class="cluster-heading">
+            <div><p class="cluster-kicker">Upstream</p><h2>Reglerverbindung</h2></div>
+            <span class="badge" id="upstream-badge">Getrennt</span>
+          </header>
+          <div class="parameter-list status-list">
+            <div class="parameter-row"><span class="parameter-label">Aktives Profil</span><strong class="parameter-output" id="active-profile-name">Kein Profil aktiv</strong></div>
+            <div class="parameter-row"><span class="parameter-label">Ziel</span><span class="parameter-output muted" id="active-profile-target">Legen Sie ein Profil an.</span></div>
+            <div class="parameter-row"><span class="parameter-label">Wiederholungen</span><strong class="parameter-output" id="retries">0</strong></div>
+            <div class="parameter-row"><span class="parameter-label">Zeitüberschreitungen</span><strong class="parameter-output" id="timeouts">0</strong></div>
+            <div class="parameter-row"><span class="parameter-label">Neuaufbauten</span><strong class="parameter-output" id="reconnects">0</strong></div>
+          </div>
+        </article>
+      </div>
+      <aside class="notice"><strong>Sicherheitsgrenze</strong><span>Das Gateway reicht Modbus-PDUs transparent weiter. Ein gespeicherter Zugangsschlüssel wird im Pass-through-Modus nicht in Telegramme eingefügt.</span></aside>
+    </section>
+
+    <section id="profiles-view" class="view hidden" aria-labelledby="profiles-title">
+      <div class="page-heading">
+        <div><p class="eyebrow">Gateway → Regler</p><h1 id="profiles-title">Reglerverbindung</h1><p class="subtitle">Verwalten Sie Transport, Ziel und Zeitverhalten des Reglers.</p></div>
+        <button class="primary" id="new-profile">Neues Profil</button>
+      </div>
+
+      <div class="profile-layout">
+        <aside class="profile-list card" aria-label="Verbindungsprofile"><div id="profile-list"></div></aside>
+        <form id="profile-form" class="form-stack">
+          <input type="hidden" id="profile-id">
+
+          <section class="card parameter-cluster">
+            <header class="cluster-heading">
+              <div><p class="cluster-kicker">Allgemein</p><h2>Profil</h2><p>Name und optionale Beschreibung der Reglerverbindung.</p></div>
+            </header>
+            <div class="parameter-list">
+              <div class="parameter-row">
+                <label class="parameter-label" for="name">Name</label>
+                <div class="parameter-value"><input id="name" required maxlength="100" placeholder="z. B. Heizzentrale West"></div>
+              </div>
+              <div class="parameter-row">
+                <label class="parameter-label" for="description">Beschreibung</label>
+                <div class="parameter-value"><textarea id="description" rows="2" maxlength="1000" placeholder="Standort oder Verwendungszweck"></textarea></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card parameter-cluster">
+            <header class="cluster-heading">
+              <div><p class="cluster-kicker">Kommunikationsweg</p><h2>Transport und Ziel</h2><p>Ausschließlich die Verbindung vom Gateway zum Regler.</p></div>
+            </header>
+            <div class="parameter-list">
+              <div class="parameter-row">
+                <label class="parameter-label" for="transport">Transport</label>
+                <div class="parameter-value"><select id="transport"><option value="modbus_tcp">Modbus TCP</option><option value="rtu_over_tcp">RTU-over-TCP</option><option value="serial_rtu">Serial RTU</option></select></div>
+              </div>
+              <div class="parameter-row" id="host-field">
+                <label class="parameter-label" for="host">Host</label>
+                <div class="parameter-value"><input id="host" placeholder="192.168.1.40"></div>
+              </div>
+              <div class="parameter-row" id="port-field">
+                <label class="parameter-label" for="port">Port</label>
+                <div class="parameter-value"><input id="port" type="number" min="1" max="65535" value="502"></div>
+              </div>
+              <div class="parameter-row">
+                <label class="parameter-label" for="upstream-unit-id">Modbus-Station</label>
+                <div class="parameter-value"><input id="upstream-unit-id" type="number" min="1" max="247" value="247"></div>
+              </div>
+            </div>
+            <div id="serial-fields" class="parameter-list parameter-subgroup hidden">
+              <div class="subgroup-title">Serielle Schnittstelle</div>
+              <div class="parameter-row">
+                <label class="parameter-label" for="serial-device">Gerät</label>
+                <div class="parameter-value"><input id="serial-device" placeholder="/dev/ttyUSB0"></div>
+              </div>
+              <div class="parameter-row">
+                <label class="parameter-label" for="baudrate">Baudrate</label>
+                <div class="parameter-value"><input id="baudrate" type="number" min="300" max="4000000" value="19200"></div>
+              </div>
+              <div class="parameter-row">
+                <label class="parameter-label" for="data-bits">Datenbits</label>
+                <div class="parameter-value"><select id="data-bits"><option>8</option><option>7</option></select></div>
+              </div>
+              <div class="parameter-row">
+                <label class="parameter-label" for="parity">Parität</label>
+                <div class="parameter-value"><select id="parity"><option value="N">Keine</option><option value="E">Gerade</option><option value="O">Ungerade</option></select></div>
+              </div>
+              <div class="parameter-row">
+                <label class="parameter-label" for="stop-bits">Stoppbits</label>
+                <div class="parameter-value"><select id="stop-bits"><option>1</option><option>2</option></select></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card parameter-cluster">
+            <header class="cluster-heading">
+              <div><p class="cluster-kicker">Berechtigung</p><h2>Zugang</h2><p>Der Schlüssel wird geschützt dargestellt und nicht aktiv in das Protokoll eingebracht.</p></div>
+            </header>
+            <div class="parameter-list">
+              <div class="parameter-row">
+                <label class="parameter-label" for="access-key">Zugangsschlüssel</label>
+                <div class="parameter-value"><div class="password-wrap"><input id="access-key" type="password" autocomplete="new-password" placeholder="Unverändert lassen"><button type="button" id="toggle-key" aria-label="Schlüssel anzeigen">Anzeigen</button></div><small id="key-state">Nicht hinterlegt</small></div>
+              </div>
+              <div class="parameter-row">
+                <span class="parameter-label">Schlüssel löschen</span>
+                <div class="parameter-value"><label class="checkbox"><input id="clear-key" type="checkbox"> Hinterlegten Schlüssel beim Speichern löschen</label></div>
+              </div>
+              <div class="parameter-row">
+                <label class="parameter-label" for="key-mode">Schlüsselmodus</label>
+                <div class="parameter-value"><input id="key-mode" value="Pass-through" disabled><small>Aktive Schlüssel-Injektion bleibt bis zur Protokollbestätigung deaktiviert.</small></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card parameter-cluster">
+            <header class="cluster-heading">
+              <div><p class="cluster-kicker">Kommunikation</p><h2>Zeitverhalten</h2><p>Timeouts, Mindestabstände und Verzögerungen der Reglerverbindung.</p></div>
+            </header>
+            <div class="parameter-list">
+              <div class="parameter-row"><label class="parameter-label" for="connect-timeout">Verbindungs-Timeout</label><div class="parameter-value input-with-unit"><input id="connect-timeout" type="number" min="0.1" max="120" step="0.1"><span>s</span></div></div>
+              <div class="parameter-row"><label class="parameter-label" for="response-timeout">Antwort-Timeout</label><div class="parameter-value input-with-unit"><input id="response-timeout" type="number" min="0.1" max="120" step="0.1"><span>s</span></div></div>
+              <div class="parameter-row"><label class="parameter-label" for="total-timeout">Gesamt-Timeout</label><div class="parameter-value input-with-unit"><input id="total-timeout" type="number" min="0.1" max="300" step="0.1"><span>s</span></div></div>
+              <div class="parameter-row"><label class="parameter-label" for="minimum-interval">Mindestabstand</label><div class="parameter-value input-with-unit"><input id="minimum-interval" type="number" min="0" max="30" step="0.01"><span>s</span></div></div>
+              <div class="parameter-row"><label class="parameter-label" for="settle-delay">Startverzögerung</label><div class="parameter-value input-with-unit"><input id="settle-delay" type="number" min="0" max="30" step="0.01"><span>s</span></div></div>
+              <div class="parameter-row"><label class="parameter-label" for="reconnect-delay">Neuaufbau-Verzögerung</label><div class="parameter-value input-with-unit"><input id="reconnect-delay" type="number" min="0" max="120" step="0.1"><span>s</span></div></div>
+            </div>
+          </section>
+
+          <section class="card parameter-cluster">
+            <header class="cluster-heading">
+              <div><p class="cluster-kicker">Fehlerbehandlung</p><h2>Wiederholungen</h2><p>Anzahl sicher zulässiger Wiederholungsversuche.</p></div>
+            </header>
+            <div class="parameter-list">
+              <div class="parameter-row"><label class="parameter-label" for="read-retries">Lesezugriffe</label><div class="parameter-value"><input id="read-retries" type="number" min="0" max="10"></div></div>
+              <div class="parameter-row"><label class="parameter-label" for="write-retries">Schreibzugriffe</label><div class="parameter-value"><input id="write-retries" type="number" min="0" max="3"><small>Nur vor eindeutig nicht gesendeten Requests.</small></div></div>
+            </div>
+          </section>
+
+          <div id="form-message" class="form-message" role="status" aria-live="polite"></div>
+          <div class="form-actions"><button type="button" class="danger hidden" id="delete-profile">Löschen</button><span></span><button type="button" class="secondary" id="test-profile">Verbindung testen</button><button type="button" class="secondary hidden" id="activate-profile">Aktivieren</button><button type="submit" class="primary">Speichern</button></div>
+        </form>
+      </div>
+    </section>
+  </main>
+  <script src="/app.js" defer></script>
+</body>
+</html>

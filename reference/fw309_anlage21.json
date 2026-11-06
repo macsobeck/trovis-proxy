@@ -1,0 +1,198 @@
+{
+  "schema_version": "1.0",
+  "kind": "golden_sample",
+  "warning": "Reference configuration of one real installation; never use as a general default.",
+  "source": "2026_11_05_Trovis_5573_1_Konfig.pdf",
+  "controller": {
+    "manufacturer": "SAMSON",
+    "model": "TROVIS 5573-1",
+    "firmware": "03.09.00",
+    "serial_number": "243179",
+    "system_code": "2.1",
+    "modbus_unit_id": 247,
+    "trovis_view": "4.100.34",
+    "device_module": "3.09.00-3.09.99"
+  },
+  "configuration_options": {
+    "CO1": {
+      "label": "Heizkreis Rk1",
+      "functions": [
+        {"function": "F01", "state": "OFF"},
+        {"function": "F02", "state": "ON"},
+        {"function": "F03", "state": "ON", "parameters": {"limit_factor": 1.0}},
+        {"function": "F04", "state": "OFF"},
+        {"function": "F05", "state": "OFF", "parameters": {"boost_c": 0.0, "start_c": 25.0, "hold_start_days": 0, "rise_c_per_24h": 5.0, "maximum_c": 45.0, "hold_maximum_days": 4, "fall_c_per_24h": 0.0}},
+        {"function": "F06", "state": "OFF"},
+        {"function": "F07", "state": "OFF"},
+        {"function": "F08", "state": "OFF"},
+        {"function": "F09", "state": "OFF", "parameters": {"cycle_minutes": 20, "kp": 0.0}},
+        {"function": "F11", "state": "OFF"},
+        {"function": "F12", "state": "ON", "parameters": {"kp": 0.2, "tn_s": 130, "tv_s": 0, "ty_s": 25, "hysteresis_c": 5.0, "minimum_on_minutes": 2, "minimum_off_minutes": 2}},
+        {"function": "F13", "state": "OFF", "parameters": {"maximum_deviation_c": 3.0}},
+        {"function": "F14", "state": "OFF", "parameters": {"selection": "bE", "level": 1}},
+        {"function": "F16", "state": "OFF"},
+        {"function": "F17", "state": "OFF", "parameters": {"level": 1}},
+        {"function": "F18", "state": "OFF", "parameters": {"range_start_c": 0.0, "range_end_c": 120.0, "boost_c": 0.0}},
+        {"function": "F20", "state": "OFF"},
+        {"function": "F21", "state": "OFF", "parameters": {"threshold_start_c": 40.0, "threshold_end_c": 50.0, "minimum_speed_percent": 20}},
+        {"function": "F22", "state": "OFF"},
+        {"function": "F23", "state": "OFF", "parameters": {"setpoint_c": 20.0, "kp": 1.0, "minimum_speed_percent": 20}},
+        {"function": "F24", "state": "OFF"},
+        {"function": "F27", "state": "OFF"},
+        {"function": "F28", "state": "OFF", "parameters": {"night_100_percent_c": 5.0, "night_0_percent_c": -6.0}},
+        {"function": "F29", "state": "OFF", "parameters": {"duration_minutes": 45, "increase_percent": 30}}
+      ]
+    },
+    "CO4": {
+      "label": "Trinkwasser",
+      "functions": [
+        {"function": "F01", "state": "ON"},
+        {"function": "F02", "state": "OFF"},
+        {"function": "F03", "state": "OFF", "parameters": {"limit_factor": 1.0}},
+        {"function": "F04", "state": "OFF", "parameters": {"input": "Binary", "ranges": ["2-10 V", "4-20 mA", "0-40 l/min"]}},
+        {"function": "F05", "state": "OFF"},
+        {"function": "F06", "state": "OFF", "parameters": {"abort_minutes": 10, "limit_c": 40.0}},
+        {"function": "F07", "state": "ON"},
+        {"function": "F08", "state": "OFF", "parameters": {"activation_minutes": 2, "factor": 1.0, "priority": "Rk2"}},
+        {"function": "F09", "state": "OFF", "parameters": {"activation_minutes": 2, "priority": "Rk2"}},
+        {"function": "F10", "state": "OFF"},
+        {"function": "F11", "state": "OFF"},
+        {"function": "F12", "state": "OFF", "parameters": {"hysteresis_c": 5.0, "minimum_on_minutes": 2, "minimum_off_minutes": 2, "minimum_speed_percent": 10, "controller_1": {"kp": 2.0, "tn_s": 30, "tv_s": 0}, "controller_2": {"kp": 2.0, "tn_s": 120, "tv_s": 0}, "ty_s": 35}},
+        {"function": "F13", "state": "OFF", "parameters": {"maximum_deviation_c": 3.0}},
+        {"function": "F14", "state": "OFF", "parameters": {"weekday": "Wednesday", "weekday_number": 3, "disinfection_c": 70.0, "boost_c": 25.0, "start": "00:00", "end": "04:00", "level": 1, "hold_hours": 0}},
+        {"function": "F15", "state": "ON"},
+        {"function": "F16", "state": "OFF"},
+        {"function": "F19", "state": "OFF"},
+        {"function": "F20", "state": "OFF"},
+        {"function": "F21", "state": "OFF", "parameters": {"threshold_start_c": 40.0, "threshold_end_c": 50.0, "minimum_speed_percent": 20}},
+        {"function": "F22", "state": "OFF", "parameters": {"valve_percent": 10}},
+        {"function": "F24", "state": "OFF"},
+        {"function": "F27", "state": "OFF"},
+        {"function": "F28", "state": "OFF", "parameters": {"flow_start_l_min": 5.0, "flow_end_l_min": 30.0, "minimum_speed_percent": 20}},
+        {"function": "F29", "state": "OFF", "parameters": {"on_s": 15, "off_s": 60, "threshold_l_min": 4.0}},
+        {"function": "F30", "state": "OFF", "parameters": {"on_minutes": 10, "off_minutes": 10}},
+        {"function": "F31", "state": "OFF", "parameters": {"activation_minutes": 2, "priority": "Rk2"}},
+        {"function": "F35", "state": "OFF", "parameters": {"level": 1}}
+      ]
+    },
+    "CO5": {
+      "label": "Anlagenübergreifend",
+      "functions": [
+        {"function": "F01", "state": "ON"},
+        {"function": "F02", "state": "OFF"},
+        {"function": "F03", "state": "OFF"},
+        {"function": "F04", "state": "OFF", "parameters": {"start": "06-01", "start_days": 2, "end": "09-30", "end_days": 1, "threshold_c": 18.0}},
+        {"function": "F05", "state": "OFF", "parameters": {"delay_c_per_hour": 3.0}},
+        {"function": "F06", "state": "OFF", "parameters": {"delay_c_per_hour": 3.0}},
+        {"function": "F07", "state": "OFF", "parameters": {"contact": "normally_closed"}},
+        {"function": "F08", "state": "ON"},
+        {"function": "F09", "state": "ON", "parameters": {"frost_threshold_c": -3.0}},
+        {"function": "F10", "state": "OFF", "parameters": {"maximum_impulses_per_hour": {"general": 15, "heating": 15, "dhw": 15}, "factor": 1.0}},
+        {"function": "F12", "state": "OFF", "parameters": {"input": "binary", "level": 1}},
+        {"function": "F13", "state": "OFF"},
+        {"function": "F14", "state": "OFF"},
+        {"function": "F15", "state": "OFF", "parameters": {"level": 1}},
+        {"function": "F16", "state": "OFF"},
+        {"function": "F19", "state": "OFF"},
+        {"function": "F20", "state": "ON"},
+        {"function": "F21", "state": "OFF"},
+        {"function": "F22", "state": "OFF"},
+        {"function": "F23", "state": "OFF", "parameters": {"range_start_c": -20.0, "range_end_c": 50.0, "direction": "input"}},
+        {"function": "F24", "state": "OFF"},
+        {"function": "F25", "state": "OFF", "parameters": {"zero_percent": 0}},
+        {"function": "F31", "state": "OFF", "parameters": {"zero_percent": 5, "range_start": 0, "range_end": 120}},
+        {"function": "F34", "state": "OFF", "parameters": {"function": "Y1"}},
+        {"function": "F41", "state": "OFF", "parameters": {"day_to_night_minutes": 30, "night_to_day_minutes": 30}}
+      ]
+    },
+    "CO6": {
+      "label": "Kommunikation",
+      "functions": [
+        {"function": "F01", "state": "ON"},
+        {"function": "F02", "state": "OFF"},
+        {"function": "F03", "state": "OFF"},
+        {"function": "F04", "state": "OFF"},
+        {"function": "F05", "state": "OFF"},
+        {"function": "F06", "state": "OFF"},
+        {"function": "F07", "state": "OFF"},
+        {"function": "F08", "state": "OFF"},
+        {"function": "F10", "state": "OFF", "parameters": {"heat_meters": [{"number": 1, "address": 255, "type": 1434, "read_mode": "CONT", "tariff": "tAr-A"}, {"number": 2, "address": 255, "type": 1434, "read_mode": "CONT"}, {"number": 3, "address": 255, "type": 1434, "read_mode": "CONT"}, {"number": 4, "address": 255, "type": 1434, "read_mode": "CONT"}, {"number": 5, "address": 255, "type": 1434, "read_mode": "CONT"}, {"number": 6, "address": 255, "type": 1434, "read_mode": "CONT"}]}},
+        {"function": "F11", "state": "OFF", "parameters": {"flow_limits_m3_h": {"general": 1.5, "heating": 1.5, "dhw": 1.5}, "factor": 1.0}},
+        {"function": "F12", "state": "OFF", "parameters": {"power_limits_kw": {"general": 1.5, "heating": 1.5, "dhw": 1.5}, "factor": 1.0}},
+        {"function": "F13", "state": "OFF", "parameters": {"maximum_flow_m3_h": 1.5, "factor": 1.0}},
+        {"function": "F14", "state": "OFF", "parameters": {"maximum_power_kw": 1.5, "factor": 1.0}},
+        {"function": "F17", "state": "OFF", "parameters": {"maximum_power_kw": 1.5, "maximum_return_c": 55.0}},
+        {"function": "F20", "state": "OFF"}
+      ]
+    },
+    "CO7": {
+      "label": "Gerätebus",
+      "functions": [
+        {"function": "F01", "state": "OFF", "parameters": {"address": null}},
+        {"function": "F02", "state": "OFF", "parameters": {"address": null}},
+        {"function": "F03", "state": "OFF", "parameters": {"address": null}},
+        {"function": "F04", "state": "OFF", "parameters": {"address": null}},
+        {"function": "F06", "state": "OFF", "parameters": {"register": 1}},
+        {"function": "F07", "state": "OFF", "parameters": {"register": 1}},
+        {"function": "F08", "state": "OFF", "parameters": {"register": 2}},
+        {"function": "F09", "state": "OFF", "parameters": {"register": 2}},
+        {"function": "F10", "state": "OFF", "parameters": {"register": 5}},
+        {"function": "F11", "state": "OFF", "parameters": {"register": 5}},
+        {"function": "F13", "state": "OFF", "parameters": {"register": 5}},
+        {"function": "F14", "state": "OFF", "parameters": {"register": 5}},
+        {"function": "F15", "state": "OFF", "parameters": {"register": 5}},
+        {"function": "F16", "state": "OFF"},
+        {"function": "F17", "state": "OFF", "parameters": {"register": 5}},
+        {"function": "F19", "state": "OFF", "parameters": {"register": 32}},
+        {"function": "F20", "state": "OFF", "parameters": {"register": 32}},
+        {"function": "F21", "state": "OFF", "parameters": {"register": 32}},
+        {"function": "F22", "state": "OFF", "parameters": {"register": 32}}
+      ]
+    },
+    "CO8": {
+      "label": "Fehlerinitialisierung",
+      "functions": [
+        {"function": "F01", "state": "OFF", "parameters": {"error_state": "BE=1"}},
+        {"function": "F02", "state": "OFF", "parameters": {"error_state": "BE=1"}}
+      ]
+    }
+  },
+  "parameters": {
+    "RK1": {
+      "heating_curve_slope": 1.0,
+      "heating_curve_level_c": 0.0,
+      "minimum_flow_c": 30.0,
+      "maximum_flow_c": 70.0,
+      "rated_outdoor_on_c": -6.0,
+      "rated_outdoor_off_c": 18.0,
+      "reduced_outdoor_off_c": 17.0,
+      "return_curve_slope": 1.2,
+      "return_curve_level_c": 0.0,
+      "return_base_or_max_c": 65.0,
+      "room_day_c": 19.5,
+      "room_night_c": 17.0
+    },
+    "DHW": {
+      "minimum_c": 23.0,
+      "maximum_c": 55.0,
+      "hysteresis_c": 8.0,
+      "charging_boost_c": 25.0,
+      "maximum_return_c": 63.0,
+      "pump_lag_factor": 4.0,
+      "setpoint_day_c": 54.0,
+      "setpoint_night_c": 40.0
+    }
+  },
+  "time_programs": {
+    "RK1": {"days": "daily", "intervals": [{"start": "06:15", "end": "22:45"}]},
+    "DHW": {"days": "daily", "intervals": [{"start": "05:00", "end": "06:30"}]},
+    "circulation": {"days": "daily", "intervals": [{"start": "00:00", "end": "24:00"}]}
+  },
+  "holidays": [],
+  "vacations": [],
+  "observed_values": {
+    "AF1_c": 6.4, "VF1_c": 41.1, "RueF1_c": 31.1, "SF1_c": 48.3,
+    "FG1": 325.0, "FG2": 325.0, "RK1_actuator_percent": 10,
+    "UP1": "ON", "ZP": "ON", "SLP": "OFF", "RK2": "AUTO", "collective_level": "AUTARK"
+  }
+}

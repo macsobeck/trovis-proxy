@@ -1,0 +1,251 @@
+{
+  "schema_version": "1.1",
+  "scope": "TROVIS 5573-1, firmware 3.09.xx, read-only hardware validation",
+  "addressing": "transport.address is zero-based Modbus PDU addressing; transport.reference is the human-readable SAMSON reference",
+  "value_kind_by_group": {
+    "Controller": "identity",
+    "Communication": "communication",
+    "RK1": "configuration",
+    "DHW": "configuration",
+    "Sensors": "runtime"
+  },
+  "hardware_verification": "Per-point hardware_verified fields remain false/empty until an independently corroborated real-controller test report supports promotion.",
+  "sources": {
+    "TM": "https://github.com/Tom-Bom-badil/trovis-modbus_python-library/tree/c4a8349b64fc5407aced981ec79ac81217db876a",
+    "SAMSON": "https://www.samsongroup.com/document/e55731en_3.09.xx.pdf",
+    "GOLDEN": "2026_11_05_Trovis_5573_1_Konfig.pdf",
+    "TRO": "2026_11_05_Trovis_5573_1_Konfig.tro_55xx"
+  },
+  "data_points": [
+    {
+      "id": "controller.model", "label": "Controller model", "group": "Controller",
+      "transport": {"type": "holding_register", "address": 0, "reference": "HR40001", "read_function_code": 3, "write_function_code": null},
+      "datatype": "uint16", "enum": {"55731": "TROVIS 5573-1"}, "readable": true, "writable": false,
+      "source": ["TM:device_info.py", "TM:configurations/trovis_models.py", "GOLDEN:p1"], "confidence": "HIGH",
+      "notes": "The official FW 3.09 manual identifies the device family but does not publish this register."
+    },
+    {
+      "id": "controller.system_code", "label": "Anlagenkennziffer", "group": "Controller",
+      "transport": {"type": "holding_register", "address": 1, "reference": "HR40002", "read_function_code": 3, "write_function_code": null},
+      "datatype": "uint16", "scale": 0.1, "readable": true, "writable": false, "minimum": 0, "maximum": 999.9,
+      "source": ["TM:device_info.py", "GOLDEN:p4", "TRO:item5"], "confidence": "HIGH"
+    },
+    {
+      "id": "controller.firmware", "label": "Firmware version", "group": "Controller",
+      "transport": {"type": "holding_register", "address": 2, "reference": "HR40003", "read_function_code": 3, "write_function_code": null},
+      "datatype": "uint16", "scale": 0.01, "readable": true, "writable": false,
+      "source": ["TM:device_info.py", "GOLDEN:p16", "TRO:item2,item130"], "confidence": "HIGH"
+    },
+    {
+      "id": "controller.hardware_version", "label": "Hardware version raw", "group": "Controller",
+      "transport": {"type": "holding_register", "address": 3, "reference": "HR40004", "read_function_code": 3, "write_function_code": null},
+      "datatype": "uint16", "readable": true, "writable": false,
+      "source": ["TM:device_info.py"], "confidence": "HIGH",
+      "notes": "Read as a raw integer because the public upstream formatter and the engineering representation require hardware confirmation."
+    },
+    {
+      "id": "controller.serial_number", "label": "Serial number", "group": "Controller",
+      "transport": {"type": "holding_register", "address": 5, "reference": "HR40006", "read_function_code": 3, "write_function_code": null},
+      "datatype": "uint16", "readable": false, "writable": false,
+      "source": ["TM:device_info.py", "GOLDEN:p16", "TRO:item3"], "confidence": "UNKNOWN",
+      "notes": "trovis-modbus models one 16-bit register, while Golden serial 243179 cannot fit. Disabled pending hardware verification."
+    },
+    {
+      "id": "controller.serial_number_raw", "label": "Serial candidate raw word", "group": "Controller",
+      "transport": {"type": "holding_register", "address": 5, "reference": "HR40006", "read_function_code": 3, "write_function_code": null},
+      "datatype": "uint16", "readable": true, "writable": false,
+      "source": ["TM:device_info.py"], "confidence": "UNKNOWN",
+      "notes": "Exploratory read-only evidence only. Do not interpret this 16-bit word as the Golden serial 243179 without an independently proven encoding."
+    },
+    {
+      "id": "communication.station_address", "label": "Modbus station address", "group": "Communication", "co": "CO6",
+      "transport": {"type": "holding_register", "address": 142, "reference": "HR40143", "read_function_code": 3, "write_function_code": null},
+      "datatype": "uint16", "minimum": 1, "maximum": 32000, "readable": true, "writable": false,
+      "dependencies": ["CO6 F02 determines 8-bit or 16-bit address mode"],
+      "source": ["TM:subsystems/controller.py", "SAMSON:12.2,CO6", "GOLDEN:p15", "TRO:item1601,item10027"], "confidence": "HIGH"
+    },
+    {
+      "id": "co1.f01", "label": "Room-temperature feedback", "group": "RK1", "co": "CO1", "function": "F01",
+      "transport": {"type": "coil", "address": 1024, "reference": "CL1025", "read_function_code": 1, "write_function_code": null},
+      "datatype": "bool", "enum": {"0": "OFF", "1": "ON"}, "readable": true, "writable": false,
+      "source": ["TM:configurations/settings.py", "GOLDEN:p4", "TRO:item301"], "confidence": "HIGH"
+    },
+    {
+      "id": "co1.f02", "label": "Outdoor sensor AF1", "group": "RK1", "co": "CO1", "function": "F02",
+      "transport": {"type": "coil", "address": 1025, "reference": "CL1026", "read_function_code": 1, "write_function_code": null},
+      "datatype": "bool", "enum": {"0": "OFF", "1": "ON"}, "readable": true, "writable": false,
+      "source": ["TM:configurations/settings.py", "GOLDEN:p4", "TRO:item302"], "confidence": "HIGH"
+    },
+    {
+      "id": "co1.f03", "label": "Four-point characteristic", "group": "RK1", "co": "CO1", "function": "F03",
+      "transport": {"type": "coil", "address": 1026, "reference": "CL1027", "read_function_code": 1, "write_function_code": null},
+      "datatype": "bool", "enum": {"0": "OFF", "1": "ON"}, "readable": true, "writable": false,
+      "source": ["TM:configurations/settings.py", "GOLDEN:p4", "TRO:item303"], "confidence": "HIGH"
+    },
+    {
+      "id": "co1.f12", "label": "Three-point control", "group": "RK1", "co": "CO1", "function": "F12",
+      "transport": {"type": "coil", "address": 1035, "reference": "CL1036", "read_function_code": 1, "write_function_code": 5},
+      "datatype": "bool", "enum": {"0": "OFF", "1": "ON"}, "readable": true, "writable": true,
+      "write_protection": "Write access HR40145 required according to trovis-modbus; not implemented here.",
+      "source": ["TM:subsystems/circuit_heating.py", "GOLDEN:p4", "TRO:item312"], "confidence": "HIGH"
+    },
+    {
+      "id": "rk1.flow.maximum", "label": "Maximum flow temperature", "group": "RK1",
+      "transport": {"type": "holding_register", "address": 1000, "reference": "HR41001", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "°C", "minimum": 5, "maximum": 150, "readable": true, "writable": true,
+      "write_protection": "HR40145", "source": ["TM:subsystems/circuit_heating.py", "GOLDEN:p13", "TRO:item1104"], "confidence": "HIGH"
+    },
+    {
+      "id": "rk1.flow.minimum", "label": "Minimum flow temperature", "group": "RK1",
+      "transport": {"type": "holding_register", "address": 1001, "reference": "HR41002", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "°C", "minimum": -5, "maximum": 150, "readable": true, "writable": true,
+      "write_protection": "HR40145", "source": ["TM:subsystems/circuit_heating.py", "GOLDEN:p13", "TRO:item1103"], "confidence": "HIGH"
+    },
+    {
+      "id": "rk1.room.day", "label": "Room setpoint day", "group": "RK1",
+      "transport": {"type": "holding_register", "address": 1002, "reference": "HR41003", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "°C", "minimum": 0, "maximum": 40, "readable": true, "writable": true,
+      "write_protection": "HR40145", "source": ["TM:subsystems/circuit_heating.py", "GOLDEN:p13", "TRO:item1130"], "confidence": "HIGH"
+    },
+    {
+      "id": "rk1.room.night", "label": "Room setpoint night", "group": "RK1",
+      "transport": {"type": "holding_register", "address": 1003, "reference": "HR41004", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "°C", "minimum": 0, "maximum": 40, "readable": true, "writable": true,
+      "write_protection": "HR40145", "source": ["TM:subsystems/circuit_heating.py", "GOLDEN:p13", "TRO:item1131"], "confidence": "HIGH"
+    },
+    {
+      "id": "rk1.heating_curve.slope", "label": "Heating curve slope", "group": "RK1",
+      "transport": {"type": "holding_register", "address": 1005, "reference": "HR41006", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "uint16", "scale": 0.1, "minimum": 0.2, "maximum": 3.2, "readable": true, "writable": true,
+      "write_protection": "HR40145", "source": ["TM:subsystems/circuit_heating.py", "GOLDEN:p13", "TRO:item1101"], "confidence": "HIGH"
+    },
+    {
+      "id": "rk1.heating_curve.level", "label": "Heating curve level", "group": "RK1",
+      "transport": {"type": "holding_register", "address": 1006, "reference": "HR41007", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "K", "minimum": -30, "maximum": 30, "readable": true, "writable": true,
+      "write_protection": "HR40145", "source": ["TM:subsystems/circuit_heating.py", "GOLDEN:p13", "TRO:item1102"], "confidence": "HIGH"
+    },
+    {
+      "id": "rk1.return_curve.slope", "label": "Return curve slope", "group": "RK1",
+      "transport": {"type": "holding_register", "address": 1008, "reference": "HR41009", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "uint16", "scale": 0.1, "minimum": 0.2, "maximum": 3.2, "readable": true, "writable": true,
+      "write_protection": "HR40145", "source": ["TM:subsystems/circuit_heating.py", "GOLDEN:p13", "TRO:item1124"], "confidence": "HIGH"
+    },
+    {
+      "id": "rk1.return_curve.level", "label": "Return curve level", "group": "RK1",
+      "transport": {"type": "holding_register", "address": 1009, "reference": "HR41010", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "K", "minimum": -30, "maximum": 30, "readable": true, "writable": true,
+      "write_protection": "HR40145", "source": ["TM:subsystems/circuit_heating.py", "GOLDEN:p13", "TRO:item1125"], "confidence": "HIGH"
+    },
+    {
+      "id": "rk1.return.maximum", "label": "Maximum return temperature", "group": "RK1",
+      "transport": {"type": "holding_register", "address": 1010, "reference": "HR41011", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "°C", "minimum": 5, "maximum": 90, "readable": true, "writable": true,
+      "write_protection": "HR40145", "source": ["TM:subsystems/circuit_heating.py", "GOLDEN:p13", "TRO:item1126,item1127"], "confidence": "HIGH"
+    },
+    {
+      "id": "rk1.return.base_point", "label": "Return curve base point", "group": "RK1",
+      "transport": {"type": "holding_register", "address": 1011, "reference": "HR41012", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "°C", "minimum": 5, "maximum": 90, "readable": true, "writable": true,
+      "write_protection": "HR40145", "source": ["TM:subsystems/circuit_heating.py", "GOLDEN:p13", "TRO:item1126"], "confidence": "MEDIUM",
+      "notes": "PDF labels the displayed value as foot/max return; exact semantic split needs hardware verification."
+    },
+    {
+      "id": "rk1.controller.kp", "label": "Controller Kp", "group": "RK1", "co": "CO1", "function": "F12", "subparameter": "Kp",
+      "transport": {"type": "holding_register", "address": 1064, "reference": "HR41065", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "uint16", "scale": 0.1, "minimum": 0.1, "maximum": 50, "readable": true, "writable": true, "write_protection": "HR40145",
+      "source": ["TM:subsystems/circuit_heating.py", "GOLDEN:p4", "TRO:item335"], "confidence": "HIGH"
+    },
+    {
+      "id": "rk1.controller.tn", "label": "Controller Tn", "group": "RK1", "co": "CO1", "function": "F12", "subparameter": "Tn",
+      "transport": {"type": "holding_register", "address": 1065, "reference": "HR41066", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "uint16", "unit": "s", "minimum": 1, "maximum": 999, "readable": true, "writable": true, "write_protection": "HR40145",
+      "source": ["TM:subsystems/circuit_heating.py", "GOLDEN:p4", "TRO:item336"], "confidence": "HIGH"
+    },
+    {
+      "id": "rk1.controller.ty", "label": "Actuator runtime Ty", "group": "RK1", "co": "CO1", "function": "F12", "subparameter": "Ty",
+      "transport": {"type": "holding_register", "address": 1066, "reference": "HR41067", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "uint16", "unit": "s", "minimum": 15, "maximum": 240, "readable": true, "writable": true, "write_protection": "HR40145",
+      "source": ["TM:subsystems/circuit_heating.py", "GOLDEN:p4", "TRO:item338"], "confidence": "HIGH"
+    },
+    {
+      "id": "rk1.controller.tv", "label": "Controller Tv", "group": "RK1", "co": "CO1", "function": "F12", "subparameter": "Tv",
+      "transport": {"type": "holding_register", "address": 1067, "reference": "HR41068", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "uint16", "unit": "s", "minimum": 0, "maximum": 999, "readable": true, "writable": true, "write_protection": "HR40145",
+      "source": ["TM:subsystems/circuit_heating.py", "GOLDEN:p4", "TRO:item337"], "confidence": "HIGH"
+    },
+    {
+      "id": "dhw.setpoint.day", "label": "DHW setpoint day", "group": "DHW", "co": "CO4",
+      "transport": {"type": "holding_register", "address": 1799, "reference": "HR41800", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "°C", "minimum": 5, "maximum": 90, "readable": true, "writable": true, "write_protection": "HR40145",
+      "source": ["TM:subsystems/circuit_dhw.py", "GOLDEN:p14", "TRO:item1411"], "confidence": "HIGH"
+    },
+    {
+      "id": "dhw.setpoint.maximum", "label": "DHW maximum", "group": "DHW", "co": "CO4",
+      "transport": {"type": "holding_register", "address": 1800, "reference": "HR41801", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "°C", "minimum": 5, "maximum": 90, "readable": true, "writable": true, "write_protection": "HR40145",
+      "source": ["TM:subsystems/circuit_dhw.py", "GOLDEN:p14", "TRO:item1402"], "confidence": "HIGH"
+    },
+    {
+      "id": "dhw.setpoint.minimum", "label": "DHW minimum", "group": "DHW", "co": "CO4",
+      "transport": {"type": "holding_register", "address": 1801, "reference": "HR41802", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "°C", "minimum": 5, "maximum": 90, "readable": true, "writable": true, "write_protection": "HR40145",
+      "source": ["TM:subsystems/circuit_dhw.py", "GOLDEN:p13", "TRO:item1401"], "confidence": "HIGH"
+    },
+    {
+      "id": "dhw.hysteresis", "label": "DHW hysteresis", "group": "DHW", "co": "CO4",
+      "transport": {"type": "holding_register", "address": 1802, "reference": "HR41803", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "uint16", "scale": 0.1, "unit": "K", "minimum": 0, "maximum": 30, "readable": true, "writable": true, "write_protection": "HR40145",
+      "source": ["TM:subsystems/circuit_dhw.py", "GOLDEN:p14", "TRO:item1403"], "confidence": "HIGH"
+    },
+    {
+      "id": "dhw.charging_boost", "label": "Charging temperature boost", "group": "DHW", "co": "CO4",
+      "transport": {"type": "holding_register", "address": 1803, "reference": "HR41804", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "uint16", "scale": 0.1, "unit": "K", "minimum": 0, "maximum": 50, "readable": true, "writable": true, "write_protection": "HR40145",
+      "source": ["TM:subsystems/circuit_dhw.py", "GOLDEN:p14", "TRO:item1404"], "confidence": "HIGH"
+    },
+    {
+      "id": "dhw.pump_lag_factor", "label": "Storage charging pump lag factor", "group": "DHW", "co": "CO4",
+      "transport": {"type": "holding_register", "address": 1804, "reference": "HR41805", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "uint16", "scale": 0.1, "minimum": 0.1, "maximum": 10, "readable": true, "writable": true, "write_protection": "HR40145",
+      "source": ["TM:subsystems/circuit_dhw.py", "GOLDEN:p14"], "confidence": "MEDIUM",
+      "notes": "Value 4.0 is in the PDF; the exact TROVIS file item was not identified."
+    },
+    {
+      "id": "dhw.setpoint.night", "label": "DHW setpoint night", "group": "DHW", "co": "CO4",
+      "transport": {"type": "holding_register", "address": 1806, "reference": "HR41807", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "°C", "minimum": 5, "maximum": 90, "readable": true, "writable": true, "write_protection": "HR40145",
+      "source": ["TM:subsystems/circuit_dhw.py", "GOLDEN:p14", "TRO:item1412"], "confidence": "HIGH"
+    },
+    {
+      "id": "dhw.return.maximum", "label": "DHW maximum return temperature", "group": "DHW", "co": "CO4",
+      "transport": {"type": "holding_register", "address": 1827, "reference": "HR41828", "read_function_code": 3, "write_function_code": 6},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "°C", "minimum": 5, "maximum": 90, "readable": true, "writable": true, "write_protection": "HR40145",
+      "source": ["TM:subsystems/circuit_dhw.py", "GOLDEN:p14", "TRO:item1407"], "confidence": "HIGH"
+    },
+    {
+      "id": "sensor.af1", "label": "Outdoor temperature AF1", "group": "Sensors",
+      "transport": {"type": "holding_register", "address": 9, "reference": "HR40010", "read_function_code": 3, "write_function_code": null},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "°C", "sentinel": 32767, "readable": true, "writable": false,
+      "source": ["TM:subsystems/sensors.py", "GOLDEN:p16"], "confidence": "HIGH"
+    },
+    {
+      "id": "sensor.vf1", "label": "Flow temperature VF1", "group": "Sensors",
+      "transport": {"type": "holding_register", "address": 12, "reference": "HR40013", "read_function_code": 3, "write_function_code": null},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "°C", "sentinel": 32767, "readable": true, "writable": false,
+      "source": ["TM:subsystems/sensors.py", "GOLDEN:p16"], "confidence": "HIGH"
+    },
+    {
+      "id": "sensor.ruef1", "label": "Return temperature RüF1", "group": "Sensors",
+      "transport": {"type": "holding_register", "address": 16, "reference": "HR40017", "read_function_code": 3, "write_function_code": null},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "°C", "sentinel": 32767, "readable": true, "writable": false,
+      "source": ["TM:subsystems/sensors.py", "GOLDEN:p16"], "confidence": "HIGH"
+    },
+    {
+      "id": "sensor.sf1", "label": "Storage temperature SF1", "group": "Sensors",
+      "transport": {"type": "holding_register", "address": 22, "reference": "HR40023", "read_function_code": 3, "write_function_code": null},
+      "datatype": "int16", "signed": true, "scale": 0.1, "unit": "°C", "sentinel": 32767, "readable": true, "writable": false,
+      "source": ["TM:subsystems/sensors.py", "GOLDEN:p16"], "confidence": "HIGH"
+    }
+  ]
+}
