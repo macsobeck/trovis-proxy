@@ -42,7 +42,33 @@ cd trovis-proxy
 If the repository is already present, open a terminal in its root directory.
 The directory must contain `compose.yaml`, `Dockerfile`, and `pyproject.toml`.
 
-## 3. Validate and build the Docker configuration
+## 3. Configure the container identity
+
+Create the local Compose environment file:
+
+```bash
+cp .env.example .env
+```
+
+The defaults run the container as UID and GID `1000`:
+
+```env
+GATEWAY_UID=1000
+GATEWAY_GID=1000
+```
+
+For the named Docker volume, the defaults normally need no adjustment. When a
+NAS directory is mounted directly into `/data`, use the owner of that directory.
+On Linux, determine the values with:
+
+```bash
+id -u
+id -g
+```
+
+The local `.env` is excluded from Git and the Docker build context.
+
+## 4. Validate and build the Docker configuration
 
 Validate the Compose file before starting anything:
 
@@ -72,7 +98,7 @@ The image includes the optional Serial RTU dependency. The default ports are:
 | TROVIS-VIEW Modbus TCP listener | all interfaces, port `7112` | `7112` |
 | Administration website | `127.0.0.1:8080` | `8080` |
 
-## 4. Start the gateway
+## 5. Start the gateway
 
 Start it in the background:
 
@@ -99,7 +125,7 @@ If startup fails, inspect the logs:
 docker compose logs --tail=100 gateway
 ```
 
-## 5. Open the administration website
+## 6. Open the administration website
 
 On the Docker host, open:
 
@@ -116,7 +142,7 @@ ssh -L 8080:127.0.0.1:8080 user@gateway-host
 
 Then open `http://127.0.0.1:8080/` on the local computer.
 
-## 6. Create the controller profile
+## 7. Create the controller profile
 
 Open **Controller connection** (`Reglerverbindung`) and select **New profile**.
 Enter the settings for the connection from the gateway to the controller:
@@ -135,7 +161,7 @@ Enter the settings for the connection from the gateway to the controller:
 Only one profile is active at a time. Changing the active profile does not
 require a rebuild or container restart.
 
-## 7. Test the controller connection
+## 8. Test the controller connection
 
 Select **Test connection** (`Verbindung testen`). The test opens the configured
 transport and reports the target, station, and connection time. It intentionally
@@ -144,7 +170,7 @@ sends no arbitrary Modbus register request.
 A successful TCP connection proves network reachability only. It does not prove
 that the controller accepts a specific Modbus function or address.
 
-## 8. Configure TROVIS-VIEW
+## 9. Configure TROVIS-VIEW
 
 Configure TROVIS-VIEW separately. Do not enter TROVIS-VIEW settings in the
 gateway profile.
@@ -162,7 +188,7 @@ controller profile.
 Allow inbound TCP port `7112` in the host firewall only from the required
 TROVIS-VIEW network or workstation.
 
-## 9. Verify operation
+## 10. Verify operation
 
 Open the **Status** page and check:
 
@@ -184,7 +210,7 @@ Raw Modbus PDU tracing is disabled by default. Enable `MODBUS_TRACE=1` in
 docker compose up -d --force-recreate
 ```
 
-## 10. Persistence and backups
+## 11. Persistence and backups
 
 Profiles are stored in `/data/config.json` inside the logical `gateway-data`
 volume. With the fixed Compose project name, Docker creates it as
@@ -206,6 +232,16 @@ chmod 600 gateway-config-backup.json
 
 The backup contains the stored access key in clear text. Protect it accordingly.
 
+When upgrading an existing named volume from the former UID `10001` default,
+change its ownership once after building the new image and before starting it:
+
+```bash
+docker compose run --rm --user root --entrypoint sh gateway \
+  -c 'chown -R 1000:1000 /data'
+```
+
+Replace `1000:1000` when `.env` contains different values.
+
 Restore a backup:
 
 ```bash
@@ -215,7 +251,7 @@ docker compose run --rm --no-deps -T --entrypoint sh gateway \
 docker compose up -d
 ```
 
-## 11. Update the installation
+## 12. Update the installation
 
 Back up the configuration first, then update and rebuild:
 
@@ -227,7 +263,7 @@ docker compose ps
 
 The named data volume remains attached to the replacement container.
 
-## 12. Serial RTU with Docker
+## 13. Serial RTU with Docker
 
 On Linux, pass the serial device into the service by adding this under
 `services.gateway` in `compose.yaml`:
@@ -244,11 +280,14 @@ group IDs differ between Linux distributions; verify them with:
 ls -l /dev/ttyUSB0
 ```
 
+Set `GATEWAY_GID` in `.env` to the serial device's group ID when group access is
+required. Rebuild the image after changing UID or GID.
+
 Direct USB serial access through Docker Desktop depends on host USB forwarding.
 For macOS or Windows, the native installation or an RTU-over-TCP adapter is often
 simpler.
 
-## 13. Native Python installation
+## 14. Native Python installation
 
 From the repository root:
 
@@ -270,7 +309,7 @@ Keep this terminal open while testing. Stop the gateway with `Ctrl+C`. For a
 permanent native installation, run the same command under a service manager and
 use an absolute configuration path.
 
-## 14. Troubleshooting
+## 15. Troubleshooting
 
 ### The website does not open
 

@@ -29,11 +29,13 @@ provided by environment variables or CLI arguments—not controller-profile fiel
 For Docker:
 
 ```bash
+cp .env.example .env
 docker compose up --build
 ```
 
 Compose builds the explicitly tagged local image
-`trovis-proxy:0.1.0` from the repository's `Dockerfile`.
+`trovis-proxy:0.1.0` from the repository's `Dockerfile`. The container defaults
+to UID/GID `1000:1000`; both values can be changed in `.env` for NAS bind mounts.
 
 Profile data persists at `/data/config.json` with mode `0600`. A stored access key is masked
 in the API and UI and is not logged, exposed as a metric, or injected into protocol traffic.
