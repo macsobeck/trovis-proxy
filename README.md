@@ -1,6 +1,6 @@
-# TROVIS Communication Gateway
+# TROVIS Proxy Gateway
 
-This repository contains a generic, locally operated communication gateway:
+This repository contains a generic, locally operated proxy gateway:
 
 ```text
 TROVIS-VIEW → Modbus TCP → Gateway → Modbus TCP / RTU-over-TCP / Serial RTU → controller

@@ -4,7 +4,7 @@
 
 This Python 3.12 repository has two deliberately separate areas:
 
-- `src/trovis_gateway/` is the generic communication gateway: Modbus framing, upstream transports, profile storage, admin API, and static UI.
+- `src/trovis_gateway/` is the generic proxy gateway: Modbus framing, upstream transports, profile storage, admin API, and static UI.
 - `src/trovis_manager/` is the read-only TROVIS 5573-1 FW 3.09 research and validation harness.
 - `tests/gateway/`, `tests/unit/`, and `tests/integration/` mirror those responsibilities.
 - `reference/` contains immutable inputs and derived firmware research; `docs/` records architecture and safety evidence.

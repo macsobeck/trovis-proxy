@@ -78,6 +78,8 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
     async def test_ui_has_controller_editor_but_no_downstream_editor(self) -> None:
         _, html = await self.fetch("/")
         self.assertIn('<html lang="en">', html)
+        self.assertIn("TROVIS Proxy Gateway", html)
+        self.assertNotIn("TROVIS Communication Gateway", html)
         self.assertIn("Controller connection", html)
         self.assertIn("Design by macsobeck", html)
         self.assertIn("TROVIS-VIEW Listener", html)

@@ -1,6 +1,6 @@
 # Installation Guide
 
-This guide installs the TROVIS Communication Gateway and connects it between
+This guide installs the TROVIS Proxy Gateway and connects it between
 TROVIS-VIEW and a controller.
 
 ```text
