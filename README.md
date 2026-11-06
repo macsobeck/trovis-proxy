@@ -10,6 +10,20 @@ The proxy forwards Modbus PDUs unchanged and has no controller- or firmware-spec
 translation. The TROVIS 5573-1 FW 3.09 code in `src/trovis_manager/` remains a separate, read-only
 integration and research harness; it is not part of the proxy core.
 
+## Interface examples
+
+### Gateway status
+
+![Gateway status overview](docs/images/gateway-status.png)
+
+*Status overview for the TROVIS-VIEW listener and the active upstream controller connection.*
+
+### Controller connection
+
+![Controller connection profile](docs/images/controller-connection.png)
+
+*Controller profile using RTU-over-TCP with its target, Modbus unit ID, and access settings.*
+
 ## USR adapter configuration
 
 For reliable operation with a USR serial-to-Ethernet adapter, configure Socket A as
