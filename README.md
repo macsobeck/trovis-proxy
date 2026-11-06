@@ -26,7 +26,7 @@ integration and research harness; it is not part of the proxy core.
 
 *Private network addresses are redacted in both interface examples.*
 
-## USR adapter configuration
+## Why this proxy
 
 For reliable operation with a USR serial-to-Ethernet adapter, configure Socket A as
 `TCP Server` and set its protocol mode to `None`. Do not select `ModbusTCP` in the adapter.
