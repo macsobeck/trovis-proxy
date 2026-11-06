@@ -24,6 +24,8 @@ integration and research harness; it is not part of the proxy core.
 
 *Controller profile using RTU-over-TCP with its target, Modbus unit ID, and access settings.*
 
+*Private network addresses are redacted in both interface examples.*
+
 ## USR adapter configuration
 
 For reliable operation with a USR serial-to-Ethernet adapter, configure Socket A as
