@@ -10,6 +10,17 @@ The proxy forwards Modbus PDUs unchanged and has no controller- or firmware-spec
 translation. The TROVIS 5573-1 FW 3.09 code in `src/trovis_manager/` remains a separate, read-only
 integration and research harness; it is not part of the proxy core.
 
+## USR adapter configuration
+
+For reliable operation with a USR serial-to-Ethernet adapter, configure Socket A as
+`TCP Server` and set its protocol mode to `None`. Do not select `ModbusTCP` in the adapter.
+In the proxy controller profile, select `RTU-over-TCP`. This combination keeps the adapter in
+transparent mode and lets the proxy handle the Modbus TCP-to-RTU framing.
+
+![USR adapter configured for transparent RTU-over-TCP operation](docs/images/usr-adapter-settings.png)
+
+*USR adapter example: Socket A uses `TCP Server`, protocol mode `None`, and local port `7112`.*
+
 ## Run the gateway
 
 Python 3.12 or newer is required.

@@ -30,7 +30,7 @@ async function loadConfig(selectFirst = true) {
 
 function renderProfiles() {
   const list = $("profile-list");
-  if (!config.profiles.length) { list.innerHTML = '<div class="empty">Noch kein Reglerprofil vorhanden.</div>'; return; }
+  if (!config.profiles.length) { list.innerHTML = '<div class="empty">No controller profiles yet.</div>'; return; }
   list.innerHTML = "";
   config.profiles.forEach(profile => {
     const button = document.createElement("button");
@@ -59,7 +59,7 @@ function selectProfile(id) {
   $("upstream-unit-id").value = profile.upstream_unit_id;
   $("access-key").value = "";
   $("clear-key").checked = false;
-  $("key-state").textContent = profile.access_key_configured ? "Schlüssel ist hinterlegt" : "Nicht hinterlegt";
+  $("key-state").textContent = profile.access_key_configured ? "Access key configured" : "Not configured";
   $("serial-device").value = profile.serial.device;
   $("baudrate").value = profile.serial.baudrate;
   $("data-bits").value = profile.serial.data_bits;
@@ -88,7 +88,7 @@ function newProfile() {
   $("connect-timeout").value = defaults.timing.connect_timeout_s; $("response-timeout").value = defaults.timing.response_timeout_s; $("total-timeout").value = defaults.timing.total_request_timeout_s;
   $("minimum-interval").value = defaults.timing.minimum_request_interval_s; $("settle-delay").value = defaults.timing.connect_settle_delay_s; $("reconnect-delay").value = defaults.timing.reconnect_delay_s; $("max-connection-age").value = defaults.timing.max_connection_age_s;
   $("read-retries").value = defaults.retry.read_retries; $("write-retries").value = defaults.retry.write_retries;
-  $("key-state").textContent = "Nicht hinterlegt";
+  $("key-state").textContent = "Not configured";
   $("delete-profile").classList.add("hidden"); $("activate-profile").classList.add("hidden");
   transportChanged(); renderProfiles(); message(""); $("name").focus();
 }
@@ -113,36 +113,36 @@ function transportChanged() {
 function message(text, error = false) { $("form-message").textContent = text; $("form-message").classList.toggle("error", error); }
 
 async function saveProfile(event) {
-  event.preventDefault(); message("Speichere …");
+  event.preventDefault(); message("Saving …");
   try {
     const id = $("profile-id").value;
     const saved = await api(id ? `/api/profiles/${id}` : "/api/profiles", { method: id ? "PUT" : "POST", body: JSON.stringify(payload()) });
-    selectedId = saved.id; await loadConfig(false); selectProfile(saved.id); message("Profil gespeichert.");
+    selectedId = saved.id; await loadConfig(false); selectProfile(saved.id); message("Profile saved.");
   } catch (error) { message(error.message, true); }
 }
 
 async function testProfile() {
-  message("Verbindung wird getestet …");
-  try { const body = payload(); if (selectedId) body.id = selectedId; const result = await api("/api/test-connection", { method:"POST", body:JSON.stringify(body) }); message(`${result.ok ? "Erreichbar" : "Nicht erreichbar"}: ${result.target} · Station ${result.upstream_unit_id} · ${result.latency_ms} ms · Modbus-Test nicht durchgeführt. ${result.detail}`, !result.ok); }
+  message("Testing connection …");
+  try { const body = payload(); if (selectedId) body.id = selectedId; const result = await api("/api/test-connection", { method:"POST", body:JSON.stringify(body) }); message(`${result.ok ? "Reachable" : "Not reachable"}: ${result.target} · Unit ${result.upstream_unit_id} · ${result.latency_ms} ms · Modbus test not performed. ${result.detail}`, !result.ok); }
   catch (error) { message(error.message, true); }
 }
 
-async function activateProfile() { try { await api(`/api/profiles/${selectedId}/activate`, { method:"POST", body:"{}" }); await loadConfig(false); selectProfile(selectedId); message("Profil aktiviert."); } catch(error) { message(error.message, true); } }
-async function deleteProfile() { if (!selectedId || !confirm("Dieses Verbindungsprofil wirklich löschen?")) return; try { await api(`/api/profiles/${selectedId}`, {method:"DELETE"}); selectedId=null; await loadConfig(); if (!config.profiles.length) newProfile(); message("Profil gelöscht."); } catch(error) { message(error.message,true); } }
+async function activateProfile() { try { await api(`/api/profiles/${selectedId}/activate`, { method:"POST", body:"{}" }); await loadConfig(false); selectProfile(selectedId); message("Profile activated."); } catch(error) { message(error.message, true); } }
+async function deleteProfile() { if (!selectedId || !confirm("Delete this connection profile?")) return; try { await api(`/api/profiles/${selectedId}`, {method:"DELETE"}); selectedId=null; await loadConfig(); if (!config.profiles.length) newProfile(); message("Profile deleted."); } catch(error) { message(error.message,true); } }
 
 async function refreshStatus() {
   try {
     const status = await api("/api/status"), metrics = status.metrics, active = status.active_profile;
-    $("health-dot").classList.add("ok"); $("health-label").textContent = "Gateway bereit";
+    $("health-dot").classList.add("ok"); $("health-label").textContent = "Gateway ready";
     $("listener").textContent = `${status.listener.address}:${status.listener.port}`;
     $("requests").textContent = metrics.requests; $("clients").textContent = metrics.downstream_clients; $("queue").textContent = metrics.queue_depth; $("retries").textContent = metrics.retries; $("timeouts").textContent = metrics.timeouts; $("reconnects").textContent = metrics.reconnects;
-    $("active-profile-name").textContent = active ? active.name : "Kein Profil aktiv"; $("active-profile-target").textContent = active ? `${target(active)} · Station ${active.upstream_unit_id}` : "Legen Sie unter Reglerverbindung ein Profil an.";
-    $("upstream-badge").textContent = metrics.upstream_connected ? "Verbunden" : "Getrennt"; $("upstream-badge").classList.toggle("ok", metrics.upstream_connected);
-  } catch (_) { $("health-dot").classList.remove("ok"); $("health-label").textContent = "Gateway nicht erreichbar"; }
+    $("active-profile-name").textContent = active ? active.name : "No active profile"; $("active-profile-target").textContent = active ? `${target(active)} · Unit ${active.upstream_unit_id}` : "Create a profile under Controller connection.";
+    $("upstream-badge").textContent = metrics.upstream_connected ? "Connected" : "Disconnected"; $("upstream-badge").classList.toggle("ok", metrics.upstream_connected);
+  } catch (_) { $("health-dot").classList.remove("ok"); $("health-label").textContent = "Gateway unavailable"; }
 }
 
 document.querySelectorAll(".nav-button").forEach(button => button.addEventListener("click", () => showView(button.dataset.view)));
 $("refresh-status").addEventListener("click", refreshStatus); $("new-profile").addEventListener("click", newProfile); $("profile-form").addEventListener("submit", saveProfile);
 $("transport").addEventListener("change", transportChanged); $("test-profile").addEventListener("click", testProfile); $("activate-profile").addEventListener("click", activateProfile); $("delete-profile").addEventListener("click", deleteProfile);
-$("toggle-key").addEventListener("click", () => { const input=$("access-key"), visible=input.type === "text"; input.type=visible?"password":"text"; $("toggle-key").textContent=visible?"Anzeigen":"Verbergen"; });
+$("toggle-key").addEventListener("click", () => { const input=$("access-key"), visible=input.type === "text"; input.type=visible?"password":"text"; $("toggle-key").textContent=visible?"Show":"Hide"; });
 loadConfig().catch(() => {}); refreshStatus(); setInterval(() => { if (!$("status-view").classList.contains("hidden")) refreshStatus(); }, 5000);

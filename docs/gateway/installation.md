@@ -139,7 +139,7 @@ Restrict host firewall access to the required LAN clients.
 
 ## 7. Create the controller profile
 
-Open **Controller connection** (`Reglerverbindung`) and select **New profile**.
+Open **Controller connection** and select **New profile**.
 Enter the settings for the connection from the gateway to the controller:
 
 1. Enter a profile name and optional description.
@@ -159,9 +159,20 @@ Enter the settings for the connection from the gateway to the controller:
 Only one profile is active at a time. Changing the active profile does not
 require a rebuild or container restart.
 
+### USR serial-to-Ethernet adapter
+
+For reliable operation with a USR adapter, configure Socket A as follows:
+
+- set **Work Mode** to `TCP Server`;
+- set the adjacent protocol mode to `None`, not `ModbusTCP`;
+- select `RTU-over-TCP` as the transport in the proxy profile.
+
+This keeps the USR adapter transparent while the proxy performs the required
+Modbus TCP-to-RTU framing.
+
 ## 8. Test the controller connection
 
-Select **Test connection** (`Verbindung testen`). The test opens the configured
+Select **Test connection**. The test opens the configured
 transport and reports the target, station, and connection time. It intentionally
 sends no arbitrary Modbus register request.
 
@@ -317,8 +328,9 @@ TCP port `7112` is allowed through the host firewall.
 ### The controller test fails
 
 Verify the active profile, controller host and port, routing, and adapter mode.
-For RTU-over-TCP, ensure the adapter transports raw Modbus RTU frames rather than
-converting them to Modbus TCP.
+For a USR adapter, set Socket A to `TCP Server` with protocol mode `None` and
+select `RTU-over-TCP` in the proxy. The adapter must transport raw Modbus RTU
+frames rather than converting them to Modbus TCP.
 
 ### Requests return gateway exception `0x0B`
 
