@@ -10,3 +10,7 @@ dist/
 *.egg-info/
 hardware-validation/*
 !hardware-validation/README.md
+
+# Private controller exports
+reference/2026_11_05_Trovis_5573_1_Konfig.pdf
+reference/2026_11_05_Trovis_5573_1_Konfig.tro_55xx
