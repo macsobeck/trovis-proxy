@@ -9,6 +9,16 @@ description = "Generic TROVIS proxy gateway and controller research tools"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
+keywords = [
+  "trovis",
+  "trovis-view",
+  "samson",
+  "modbus",
+  "modbus-tcp",
+  "rtu-over-tcp",
+  "heating-control",
+  "building-automation",
+]
 dependencies = [
   "pydantic>=2.10,<3",
 ]

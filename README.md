@@ -1,26 +1,39 @@
-# TROVIS Proxy Gateway
+# TROVIS Proxy Gateway for TROVIS-VIEW and SAMSON Controllers
 
-This repository contains a generic, locally operated proxy gateway:
+The **TROVIS Proxy Gateway** is a self-hosted Modbus proxy for reliable communication between
+**SAMSON TROVIS-VIEW** and TROVIS heating controllers, including the **SAMSON TROVIS 5573-1xxx**
+series. It provides a stable Modbus TCP endpoint for TROVIS-VIEW and connects to the controller
+through Modbus TCP, RTU-over-TCP, or Serial RTU.
 
 ```text
-TROVIS-VIEW → Modbus TCP → Gateway → Modbus TCP / RTU-over-TCP / Serial RTU → controller
+TROVIS-VIEW → Modbus TCP → TROVIS Proxy Gateway → Modbus TCP / RTU-over-TCP / Serial RTU → controller
 ```
 
 The proxy forwards Modbus PDUs unchanged and has no controller- or firmware-specific address
 translation. The TROVIS 5573-1 FW 3.09 code in `src/trovis_manager/` remains a separate, read-only
 integration and research harness; it is not part of the proxy core.
 
+## Key features
+
+- Reliable TROVIS-VIEW access through a stable Modbus TCP listener on port `7112`.
+- Controller connections via Modbus TCP, transparent RTU-over-TCP, or Serial RTU.
+- Docker Compose deployment for Linux servers and NAS systems such as Synology.
+- Persistent controller profiles with a responsive browser-based administration interface.
+- Serialized requests, safe read retries, protected writes, pacing, and proactive reconnects.
+- Transparent operation with USR serial-to-Ethernet adapters in protocol mode `None`.
+- Controller-neutral proxy core without hard-coded register maps or synthetic values.
+
 ## Interface examples
 
 ### Gateway status
 
-![Gateway status overview](docs/images/gateway-status.png)
+![TROVIS Proxy Gateway status dashboard for TROVIS-VIEW and a SAMSON controller](docs/images/gateway-status.png)
 
 *Status overview for the TROVIS-VIEW listener and the active upstream controller connection.*
 
 ### Controller connection
 
-![Controller connection profile](docs/images/controller-connection.png)
+![TROVIS Proxy Gateway RTU-over-TCP controller profile](docs/images/controller-connection.png)
 
 *Controller profile using RTU-over-TCP with its target, Modbus unit ID, and access settings.*
 
@@ -39,37 +52,55 @@ heating controllers such as the SAMSON TROVIS 5573-1xxx series.
 
 *USR adapter example: Socket A uses `TCP Server`, protocol mode `None`, and local port `7112`.*
 
-## Run the gateway
+## Quick start with Docker or Python
+
+### Docker Compose (recommended)
+
+```bash
+cp .env.example .env
+mkdir -p data
+docker compose up -d --build
+```
+
+Open `http://localhost:8083/`. Compose builds the explicitly tagged local image
+`trovis-proxy:0.1.0` and publishes the TROVIS-VIEW listener on port `7112`. The container defaults
+to UID/GID `1000:1000`; both values can be changed in `.env` for NAS bind mounts.
+
+### Native Python
 
 Python 3.12 or newer is required.
 
 ```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
 python -m pip install -e '.[dev,serial]'
+mkdir -p data
 trovis-gateway --listen-host 0.0.0.0 --listen-port 7112 \
   --admin-host 127.0.0.1 --admin-port 8080 \
   --config-path ./data/config.json
 ```
 
-Open `http://127.0.0.1:8080`, create a controller profile, test its transport connection,
-and activate it. The connection test opens only the configured transport; it sends no
-invented Modbus register request. The listener address and port are infrastructure settings
-provided by environment variables or CLI arguments—not controller-profile fields.
+Open `http://127.0.0.1:8080/` for a native installation.
 
-For Docker:
-
-```bash
-cp .env.example .env
-docker compose up --build
-```
-
-Compose builds the explicitly tagged local image
-`trovis-proxy:0.1.0` from the repository's `Dockerfile`. The container defaults
-to UID/GID `1000:1000`; both values can be changed in `.env` for NAS bind mounts.
-The administration website is published to the LAN on host port `8083`.
+Create a controller profile, test its transport connection, and activate it. The connection test
+opens only the configured transport; it sends no invented Modbus register request. Listener
+address and port are infrastructure settings supplied by environment variables or CLI arguments,
+not controller-profile fields.
 
 Profile data persists in the host directory `./data` and appears as `/data/config.json` in the
-container with mode `0600`. A stored access key is masked in the API and UI and is not logged,
-exposed as a metric, or injected into protocol traffic.
+Docker container with mode `0600`. A stored access key is masked in the API and UI and is not
+logged, exposed as a metric, or injected into protocol traffic.
+
+## Installation guide
+
+Follow the [step-by-step installation guide](docs/gateway/installation.md) for:
+
+- Docker and Docker Compose prerequisites;
+- Synology NAS deployment, bind mounts, UID/GID ownership, and persistent storage;
+- controller profiles for Modbus TCP, RTU-over-TCP, and Serial RTU;
+- USR serial-to-Ethernet adapter settings;
+- TROVIS-VIEW network configuration;
+- upgrades, backups, diagnostics, and troubleshooting.
 
 ## Safety model
 
@@ -85,8 +116,30 @@ exposed as a metric, or injected into protocol traffic.
 
 See [gateway architecture](docs/gateway/architecture.md),
 [configuration](docs/gateway/configuration.md), and
-[protocol safety](docs/gateway/protocol-safety.md). For a complete deployment,
-follow the [step-by-step installation guide](docs/gateway/installation.md).
+[protocol safety](docs/gateway/protocol-safety.md).
+
+## Frequently asked questions
+
+### Does this gateway replace TROVIS-VIEW?
+
+No. TROVIS-VIEW remains the configuration application. The proxy gateway provides a reliable
+network path between TROVIS-VIEW and the heating controller.
+
+### Which TROVIS controllers are supported?
+
+The proxy core is controller-neutral and forwards Modbus PDUs transparently. The documented
+deployment has been validated with a SAMSON TROVIS 5573-1xxx controller. Other controllers can be
+used when they expose a compatible Modbus TCP, RTU-over-TCP, or Serial RTU interface.
+
+### Can the TROVIS Proxy Gateway run on a Synology NAS?
+
+Yes. The Docker Compose setup supports NAS deployment, UID/GID mapping, automatic restarts, and a
+persistent bind-mounted `./data` directory for controller profiles.
+
+### Which mode should a USR Ethernet adapter use?
+
+Use `TCP Server` with protocol mode `None`, then select `RTU-over-TCP` in the proxy profile. Do not
+enable the adapter's `ModbusTCP` conversion mode for TROVIS-VIEW communication.
 
 ## Development
 
