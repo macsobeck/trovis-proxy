@@ -141,6 +141,12 @@ persistent bind-mounted `./data` directory for controller profiles.
 Use `TCP Server` with protocol mode `None`, then select `RTU-over-TCP` in the proxy profile. Do not
 enable the adapter's `ModbusTCP` conversion mode for TROVIS-VIEW communication.
 
+## Development assistance
+
+This repository was developed and is maintained by macsobeck with assistance from OpenAI Codex
+for code analysis, implementation, testing, documentation, and release preparation. All changes
+are reviewed and published by the repository maintainer.
+
 ## Development
 
 ```bash
