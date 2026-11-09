@@ -1,5 +1,14 @@
 FROM python:3.12-slim
 
+ARG IMAGE_VERSION=1.1.0
+
+LABEL org.opencontainers.image.title="TROVIS Proxy Gateway" \
+      org.opencontainers.image.description="Multi-client Modbus proxy for TROVIS-VIEW, TROVIS 55 Pro, Node-RED, and SAMSON heating controllers" \
+      org.opencontainers.image.source="https://github.com/macsobeck/trovis-proxy" \
+      org.opencontainers.image.url="https://github.com/macsobeck/trovis-proxy" \
+      org.opencontainers.image.version="${IMAGE_VERSION}" \
+      org.opencontainers.image.licenses="Apache-2.0"
+
 RUN set -eux; \
     apt-get update; \
     apt-get upgrade --yes; \
