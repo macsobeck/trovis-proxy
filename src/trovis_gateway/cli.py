@@ -8,6 +8,7 @@ import logging
 from dataclasses import replace
 from pathlib import Path
 
+from . import __version__
 from .app import GatewayApplication
 from .config import InfrastructureSettings
 
@@ -15,6 +16,7 @@ from .config import InfrastructureSettings
 def parser() -> argparse.ArgumentParser:
     defaults = InfrastructureSettings.from_environment()
     command = argparse.ArgumentParser(description="Generic TROVIS Proxy Gateway")
+    command.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     command.add_argument("--listen-host", default=defaults.listen_host)
     command.add_argument("--listen-port", type=int, default=defaults.listen_port)
     command.add_argument("--admin-host", default=defaults.admin_host)

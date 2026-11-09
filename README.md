@@ -64,7 +64,7 @@ docker compose up -d --build
 ```
 
 Open `http://localhost:8083/`. Compose builds the explicitly tagged local image
-`trovis-proxy:0.1.0` and publishes the TROVIS-VIEW listener on port `7112`. The container defaults
+`trovis-proxy:1.1` and publishes the TROVIS-VIEW listener on port `7112`. The container defaults
 to UID/GID `1000:1000`; both values can be changed in `.env` for NAS bind mounts.
 
 ### Native Python

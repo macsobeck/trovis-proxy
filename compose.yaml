@@ -2,7 +2,7 @@ name: trovis-proxy
 
 services:
   gateway:
-    image: trovis-proxy:0.1.0
+    image: trovis-proxy:1.1
     build:
       context: .
       dockerfile: Dockerfile

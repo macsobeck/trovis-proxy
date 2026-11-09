@@ -14,11 +14,11 @@ from urllib.parse import urlsplit
 
 from pydantic import ValidationError
 
+from .. import __version__
 from ..config import ControllerProfile, InfrastructureSettings
 from ..connection_test import test_connection
 from ..metrics import GatewayMetrics
 from ..store import ConfigStore, public_profile
-
 
 STATIC_ROOT = Path(__file__).parent / "static"
 MAX_JSON_BYTES = 256 * 1024
@@ -72,7 +72,7 @@ class AdminServer:
 
 class AdminHandler(BaseHTTPRequestHandler):
     admin: AdminServer
-    server_version = "TrovisGatewayAdmin/0.1"
+    server_version = f"TrovisGatewayAdmin/{__version__}"
 
     def log_message(self, format: str, *args: object) -> None:
         return
@@ -87,6 +87,7 @@ class AdminHandler(BaseHTTPRequestHandler):
             self._json(
                 HTTPStatus.OK,
                 {
+                    "version": __version__,
                     "listener": {
                         "address": self.admin.settings.listen_host,
                         "port": self.admin.settings.listen_port,

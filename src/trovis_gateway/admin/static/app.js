@@ -134,6 +134,7 @@ async function deleteProfile() { if (!selectedId || !confirm("Delete this connec
 async function refreshStatus() {
   try {
     const status = await api("/api/status"), metrics = status.metrics, active = status.active_profile;
+    $("release-version").textContent = `Release ${status.version}`;
     $("health-dot").classList.add("ok"); $("health-label").textContent = "Gateway ready";
     $("listener").textContent = `${status.listener.address}:${status.listener.port}`;
     $("requests").textContent = metrics.requests; $("clients").textContent = metrics.downstream_clients; $("queue").textContent = metrics.queue_depth; $("retries").textContent = metrics.retries; $("timeouts").textContent = metrics.timeouts; $("reconnects").textContent = metrics.reconnects;

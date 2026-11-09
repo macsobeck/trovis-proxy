@@ -86,7 +86,7 @@ docker compose build
 Compose builds and tags the local image as:
 
 ```text
-trovis-proxy:0.1.0
+trovis-proxy:1.1
 ```
 
 The `build` definition remains linked to the repository's `Dockerfile`, so the
