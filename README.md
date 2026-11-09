@@ -42,12 +42,36 @@ integration and research harness; it is not part of the proxy core.
 
 ## Why this proxy gateway
 
-For reliable operation with a USR serial-to-Ethernet adapter, configure Socket A as
-`TCP Server` and set its protocol mode to `None`. Do not select `ModbusTCP` in the adapter.
-In the proxy controller profile, select `RTU-over-TCP`. This combination keeps the adapter in
-transparent mode and lets the proxy handle the Modbus TCP-to-RTU framing. Using the adapter's
-`ModbusTCP` mode with TROVIS-VIEW can cause unstable connections and failed reads and writes to
-heating controllers such as the SAMSON TROVIS 5573-1xxx series.
+I use TROVIS-VIEW to manage the configuration of my SAMSON TROVIS 5573-1xxx heating controller.
+However, using the USR adapter's `ModbusTCP` mode did not provide a reliable connection. It caused
+unstable communication causing failed reads and writes. Similar problems may also occur with other
+serial-to-Ethernet adapters that perform their own Modbus TCP-to-RTU conversion.
+
+The reliable setup is to configure the USR adapter as a `TCP Server` with its protocol mode set to
+`None`, and then select `RTU-over-TCP` in the proxy controller profile. This keeps the adapter
+transparent and lets the proxy handle the Modbus TCP-to-RTU framing.
+
+This interoperability problem was the original motivation for developing the TROVIS Proxy Gateway.
+The project has since evolved into a more general communication layer with several additional
+strengths:
+
+- **Coordinated multi-client access:** TROVIS-VIEW, Node-RED, TROVIS 55 Pro, and other Modbus TCP
+  clients can access the same controller through one gateway. Client request sequences are queued
+  and kept together to prevent competing applications from interleaving controller reads.
+- **Transparent protocol handling:** Modbus function codes, addresses, and values are forwarded
+  unchanged. The gateway does not depend on a controller-specific register map or synthetic address
+  translation.
+- **Flexible controller connections:** The upstream connection can use Modbus TCP, transparent
+  RTU-over-TCP, or Serial RTU.
+- **Reliable connection management:** Configurable pacing, timeouts, safe read retries, and
+  proactive reconnection help stabilize communication with controllers and Ethernet adapters.
+- **Protected write operations:** Writes are never repeated after an ambiguous result, reducing
+  the risk of unintended configuration changes.
+- **Simple self-hosted operation:** Docker Compose deployment, persistent configuration, and a
+  browser-based administration interface make the gateway suitable for NAS systems and other
+  always-on Linux hosts.
+- **Operational visibility:** The status interface shows connected clients, queued requests,
+  retries, timeouts, reconnects, and the active controller connection.
 
 ![USR adapter configured for transparent RTU-over-TCP operation](docs/images/usr-adapter-settings.png)
 
