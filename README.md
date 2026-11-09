@@ -57,7 +57,7 @@ strengths:
 
 - **Coordinated multi-client access:** TROVIS-VIEW, Node-RED, TROVIS 55 Pro, and other Modbus TCP
   clients can access the same controller through one gateway. Client request sequences are queued
-  and kept together to prevent competing applications from interleaving controller reads.
+  and kept together to prevent competing applications from causing failed controller reads.
 - **Transparent protocol handling:** Modbus function codes, addresses, and values are forwarded
   unchanged. The gateway does not depend on a controller-specific register map or synthetic address
   translation.
