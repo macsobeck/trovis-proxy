@@ -31,7 +31,20 @@ The provided Compose configuration publishes the administration website on
 host port `8083`. Allow access only from the trusted LAN; do not expose this
 port to the Internet.
 
-## 2. Obtain the source
+## 2. Choose an installation variant
+
+Both Docker variants provide the same gateway functions and use the same persistent `./data`
+directory. Choose one variant and keep using its Compose command throughout the installation.
+
+| Variant | Choose it when | Characteristics |
+|---|---|---|
+| **Prebuilt GitHub Package** (recommended) | You want a normal NAS or Linux installation without compiling the image locally. | Pulls the tested public image for AMD64 or ARM64, starts faster, and uses the fixed container UID/GID `1000:1000`. |
+| **Local source build** | You are developing the gateway, have changed its source code or Dockerfile, or need a different container UID/GID. | Builds the image on the host and accepts `GATEWAY_UID` and `GATEWAY_GID` from `.env`. |
+
+Use only one variant for a given installation. Switching variants later does not remove the
+configuration because both variants mount the same `./data` directory.
+
+## 3. Obtain the project files
 
 For a fresh checkout:
 
@@ -40,12 +53,25 @@ git clone https://github.com/macsobeck/trovis-proxy.git
 cd trovis-proxy
 ```
 
-If the repository is already present, open a terminal in its root directory.
-The directory must contain `compose.yaml`, `Dockerfile`, and `pyproject.toml`.
+If the repository is already present, open a terminal in its root directory. For the prebuilt
+package, the directory must contain `compose.package.yaml`; a local source build additionally uses
+`compose.yaml`, `Dockerfile`, and `pyproject.toml`.
 
-## 3. Configure the container identity
+## 4. Prepare persistent storage
 
-Create the local Compose environment file:
+Both variants store the configuration in the host directory `./data`. Create it before starting
+the gateway:
+
+```bash
+mkdir -p data
+sudo chown -R 1000:1000 data
+sudo chmod 755 data
+```
+
+The prebuilt package runs with the fixed UID and GID `1000`. The commands above provide the
+required write access on Linux and NAS systems.
+
+For a **local source build**, also create the Compose environment file:
 
 ```bash
 cp .env.example .env
@@ -58,18 +84,43 @@ GATEWAY_UID=1000
 GATEWAY_GID=1000
 ```
 
-The Compose configuration bind-mounts the host directory `./data` into `/data`.
-Use the owner of that directory for the container identity. On Linux, determine
-the values with:
+Change these values only if the local build must use a different owner for `./data`. On Linux,
+determine the required values with:
 
 ```bash
 id -u
 id -g
 ```
 
+When using different values, assign the same owner to the persistent directory before starting:
+
+```bash
+sudo chown -R 1001:1001 data
+```
+
+This example assumes that both values in `.env` were changed to `1001`.
+
 The local `.env` is excluded from Git and the Docker build context.
 
-## 4. Validate and build the Docker configuration
+## 5. Install the selected Docker variant
+
+### Variant A: Prebuilt GitHub Package (recommended)
+
+Validate the package Compose file and pull the public multi-platform image. No registry login is
+required; Docker automatically selects Linux AMD64 or ARM64.
+
+```bash
+docker compose -f compose.package.yaml config --quiet
+docker compose -f compose.package.yaml pull
+```
+
+The image reference is:
+
+```text
+ghcr.io/macsobeck/trovis-proxy:1.1.0
+```
+
+### Variant B: Local source build
 
 Validate the Compose file before starting anything:
 
@@ -99,18 +150,27 @@ The image includes the optional Serial RTU dependency. The default ports are:
 | TROVIS-VIEW Modbus TCP listener | all interfaces, port `7112` | `7112` |
 | Administration website | all interfaces, port `8083` | `8080` |
 
-## 5. Start the gateway
+## 6. Start the gateway
 
-Start it in the background:
+Start the selected variant in the background.
+
+For the **prebuilt package**:
+
+```bash
+docker compose -f compose.package.yaml up -d
+docker compose -f compose.package.yaml ps
+```
+
+For the **local source build**:
 
 ```bash
 docker compose up -d
+docker compose ps
 ```
 
-Confirm that the container is running and healthy:
+Confirm that the gateway is healthy; this check is identical for both variants:
 
 ```bash
-docker compose ps
 curl http://127.0.0.1:8083/health
 ```
 
@@ -120,13 +180,17 @@ The health endpoint should return:
 {"status":"ok"}
 ```
 
-If startup fails, inspect the logs:
+If startup fails, inspect the logs with the command for the selected variant:
 
 ```bash
+# Prebuilt package
+docker compose -f compose.package.yaml logs --tail=100 gateway
+
+# Local source build
 docker compose logs --tail=100 gateway
 ```
 
-## 6. Open the administration website
+## 7. Open the administration website
 
 From a computer in the trusted LAN, open:
 
@@ -137,7 +201,7 @@ http://NAS-IP:8083/
 Replace `NAS-IP` with the IP address or trusted DNS name of the Docker host.
 Restrict host firewall access to the required LAN clients.
 
-## 7. Create the controller profile
+## 8. Create the controller profile
 
 Open **Controller connection** and select **New profile**.
 Enter the settings for the connection from the gateway to the controller:
@@ -174,7 +238,7 @@ For reliable operation with a USR adapter, configure Socket A as follows:
 This keeps the USR adapter transparent while the proxy performs the required
 Modbus TCP-to-RTU framing.
 
-## 8. Test the controller connection
+## 9. Test the controller connection
 
 Select **Test connection**. The test opens the configured
 transport and reports the target, station, and connection time. It intentionally
@@ -183,7 +247,7 @@ sends no arbitrary Modbus register request.
 A successful TCP connection proves network reachability only. It does not prove
 that the controller accepts a specific Modbus function or address.
 
-## 9. Configure TROVIS-VIEW
+## 10. Configure TROVIS-VIEW
 
 Configure TROVIS-VIEW separately. Do not enter TROVIS-VIEW settings in the
 gateway profile.
@@ -201,7 +265,7 @@ controller profile.
 Allow inbound TCP port `7112` in the host firewall only from the required
 TROVIS-VIEW network or workstation.
 
-## 10. Verify operation
+## 11. Verify operation
 
 Open the **Status** page and check:
 
@@ -213,6 +277,10 @@ Open the **Status** page and check:
 Follow live logs when diagnosing communication:
 
 ```bash
+# Prebuilt package
+docker compose -f compose.package.yaml logs -f gateway
+
+# Local source build
 docker compose logs -f gateway
 ```
 
@@ -221,16 +289,30 @@ The current NAS Compose configuration enables raw Modbus PDU tracing with
 after troubleshooting and recreate the container:
 
 ```bash
+# Prebuilt package
+docker compose -f compose.package.yaml up -d --force-recreate
+
+# Local source build
 docker compose up -d --force-recreate
 ```
 
-## 11. Persistence and backups
+## 12. Persistence and backups
 
 Profiles are stored in `./data/config.json` on the Docker host and mounted as
 `/data/config.json` in the container. Ordinary restarts, rebuilds, and
 `docker compose down` preserve this bind-mounted directory.
 
-Create a backup after configuring the gateway:
+Create a backup after configuring the gateway.
+
+For the **prebuilt package**:
+
+```bash
+docker compose -f compose.package.yaml exec -T gateway \
+  sh -c 'cat /data/config.json' > gateway-config-backup.json
+chmod 600 gateway-config-backup.json
+```
+
+For the **local source build**:
 
 ```bash
 docker compose exec -T gateway sh -c 'cat /data/config.json' > gateway-config-backup.json
@@ -239,18 +321,18 @@ chmod 600 gateway-config-backup.json
 
 The backup contains the stored access key in clear text. Protect it accordingly.
 
-Before the first start, create the bind-mount directory and assign it to the
-configured container UID and GID:
+Restore a backup with the commands for the selected variant.
+
+For the **prebuilt package**:
 
 ```bash
-mkdir -p data
-sudo chown -R 1000:1000 data
-sudo chmod 755 data
+docker compose -f compose.package.yaml stop gateway
+docker compose -f compose.package.yaml run --rm --no-deps -T --entrypoint sh gateway \
+  -c 'umask 077; cat > /data/config.json' < gateway-config-backup.json
+docker compose -f compose.package.yaml up -d
 ```
 
-Replace `1000:1000` when `.env` contains different values.
-
-Restore a backup:
+For the **local source build**:
 
 ```bash
 docker compose stop gateway
@@ -259,9 +341,18 @@ docker compose run --rm --no-deps -T --entrypoint sh gateway \
 docker compose up -d
 ```
 
-## 12. Update the installation
+## 13. Update the installation
 
-Back up the configuration first, then update and rebuild:
+Back up the configuration first. Update the prebuilt package with:
+
+```bash
+git pull --ff-only
+docker compose -f compose.package.yaml pull
+docker compose -f compose.package.yaml up -d
+docker compose -f compose.package.yaml ps
+```
+
+For a local source build, update and rebuild with:
 
 ```bash
 git pull --ff-only
@@ -271,10 +362,10 @@ docker compose ps
 
 The bind-mounted `./data` directory remains attached to the replacement container.
 
-## 13. Serial RTU with Docker
+## 14. Serial RTU with Docker
 
 On Linux, pass the serial device into the service by adding this under
-`services.gateway` in `compose.yaml`:
+`services.gateway` in the Compose file selected for the installation:
 
 ```yaml
 devices:
@@ -288,14 +379,14 @@ group IDs differ between Linux distributions; verify them with:
 ls -l /dev/ttyUSB0
 ```
 
-Set `GATEWAY_GID` in `.env` to the serial device's group ID when group access is
-required. Rebuild the image after changing UID or GID.
+The prebuilt package has the fixed group ID `1000`. If the serial device requires a different
+group ID, use the local source build, set `GATEWAY_GID` in `.env`, and rebuild the image.
 
 Direct USB serial access through Docker Desktop depends on host USB forwarding.
 For macOS or Windows, the native installation or an RTU-over-TCP adapter is often
 simpler.
 
-## 14. Native Python installation
+## 15. Native Python installation
 
 From the repository root:
 
@@ -317,12 +408,12 @@ Keep this terminal open while testing. Stop the gateway with `Ctrl+C`. For a
 permanent native installation, run the same command under a service manager and
 use an absolute configuration path.
 
-## 15. Troubleshooting
+## 16. Troubleshooting
 
 ### The website does not open
 
-Check `docker compose ps`, the gateway logs, and whether another process already
-uses host port `8083`.
+Check the container status and gateway logs with the Compose command for the selected variant, and
+verify that no other process uses host port `8083`.
 
 ### TROVIS-VIEW cannot connect
 

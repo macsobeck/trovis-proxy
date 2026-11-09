@@ -79,7 +79,22 @@ strengths:
 
 ## Quick start with Docker or Python
 
-### Docker Compose (recommended)
+### Docker Compose with the GitHub Package (recommended)
+
+The public multi-platform image supports Linux AMD64 and ARM64. Docker selects the correct image
+automatically.
+
+```bash
+mkdir -p data
+sudo chown -R 1000:1000 data
+docker compose -f compose.package.yaml pull
+docker compose -f compose.package.yaml up -d
+```
+
+Open `http://localhost:8083/`. This variant pulls
+`ghcr.io/macsobeck/trovis-proxy:1.1.0` and requires no local image build or registry login.
+
+### Docker Compose build from source
 
 ```bash
 cp .env.example .env
