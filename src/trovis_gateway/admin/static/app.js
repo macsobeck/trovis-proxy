@@ -1,5 +1,5 @@
 const defaults = {
-  timing: { connect_timeout_s: 3, response_timeout_s: 2, total_request_timeout_s: 8, minimum_request_interval_s: .1, connect_settle_delay_s: .25, reconnect_delay_s: 1, max_connection_age_s: 25 },
+  timing: { connect_timeout_s: 3, response_timeout_s: 2, total_request_timeout_s: 8, minimum_request_interval_s: .1, client_burst_idle_s: .25, connect_settle_delay_s: .25, reconnect_delay_s: 1, max_connection_age_s: 25 },
   retry: { read_retries: 2, write_retries: 0 },
   serial: { device: "", baudrate: 19200, data_bits: 8, parity: "N", stop_bits: 1 }
 };
@@ -69,6 +69,7 @@ function selectProfile(id) {
   $("response-timeout").value = profile.timing.response_timeout_s;
   $("total-timeout").value = profile.timing.total_request_timeout_s;
   $("minimum-interval").value = profile.timing.minimum_request_interval_s;
+  $("client-burst-idle").value = profile.timing.client_burst_idle_s ?? defaults.timing.client_burst_idle_s;
   $("settle-delay").value = profile.timing.connect_settle_delay_s;
   $("reconnect-delay").value = profile.timing.reconnect_delay_s;
   $("max-connection-age").value = profile.timing.max_connection_age_s ?? defaults.timing.max_connection_age_s;
@@ -86,7 +87,7 @@ function newProfile() {
   $("transport").value = "rtu_over_tcp";
   $("baudrate").value = defaults.serial.baudrate; $("data-bits").value = 8; $("parity").value = "N"; $("stop-bits").value = 1;
   $("connect-timeout").value = defaults.timing.connect_timeout_s; $("response-timeout").value = defaults.timing.response_timeout_s; $("total-timeout").value = defaults.timing.total_request_timeout_s;
-  $("minimum-interval").value = defaults.timing.minimum_request_interval_s; $("settle-delay").value = defaults.timing.connect_settle_delay_s; $("reconnect-delay").value = defaults.timing.reconnect_delay_s; $("max-connection-age").value = defaults.timing.max_connection_age_s;
+  $("minimum-interval").value = defaults.timing.minimum_request_interval_s; $("client-burst-idle").value = defaults.timing.client_burst_idle_s; $("settle-delay").value = defaults.timing.connect_settle_delay_s; $("reconnect-delay").value = defaults.timing.reconnect_delay_s; $("max-connection-age").value = defaults.timing.max_connection_age_s;
   $("read-retries").value = defaults.retry.read_retries; $("write-retries").value = defaults.retry.write_retries;
   $("key-state").textContent = "Not configured";
   $("delete-profile").classList.add("hidden"); $("activate-profile").classList.add("hidden");
@@ -99,7 +100,7 @@ function payload() {
     host: $("host").value.trim(), port: number("port"), upstream_unit_id: number("upstream-unit-id"),
     access_key: $("access-key").value, clear_access_key: $("clear-key").checked, key_mode: "pass-through",
     serial: { device: $("serial-device").value.trim(), baudrate: number("baudrate"), data_bits: number("data-bits"), parity: $("parity").value, stop_bits: number("stop-bits") },
-    timing: { connect_timeout_s: number("connect-timeout"), response_timeout_s: number("response-timeout"), total_request_timeout_s: number("total-timeout"), minimum_request_interval_s: number("minimum-interval"), connect_settle_delay_s: number("settle-delay"), reconnect_delay_s: number("reconnect-delay"), max_connection_age_s: number("max-connection-age") },
+    timing: { connect_timeout_s: number("connect-timeout"), response_timeout_s: number("response-timeout"), total_request_timeout_s: number("total-timeout"), minimum_request_interval_s: number("minimum-interval"), client_burst_idle_s: number("client-burst-idle"), connect_settle_delay_s: number("settle-delay"), reconnect_delay_s: number("reconnect-delay"), max_connection_age_s: number("max-connection-age") },
     retry: { read_retries: number("read-retries"), write_retries: number("write-retries") }
   };
 }

@@ -279,6 +279,90 @@ class ProxyTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.pdu, bytes.fromhex("0302002a"))
         self.assertEqual(decode_rtu_adu(received[0], 12), bytes.fromhex("0300000001"))
 
+    async def test_client_read_sequences_do_not_interleave(self) -> None:
+        upstream_order: list[bytes] = []
+
+        async def persistent_client(
+            reader: asyncio.StreamReader,
+            writer: asyncio.StreamWriter,
+        ) -> None:
+            try:
+                while True:
+                    request = await read_tcp_adu(reader)
+                    upstream_order.append(request.pdu)
+                    writer.write(
+                        encode_tcp_adu(
+                            request.transaction_id,
+                            request.unit_id,
+                            request.pdu,
+                        )
+                    )
+                    await writer.drain()
+            except (asyncio.IncompleteReadError, ConnectionError):
+                pass
+            finally:
+                writer.close()
+                await writer.wait_closed()
+
+        server = await asyncio.start_server(persistent_client, "127.0.0.1", 0)
+        self.raw_servers.append(server)
+        assert server.sockets
+        port = int(server.sockets[0].getsockname()[1])
+        self.store.upsert_profile(
+            {
+                "name": "Multi-client arbitration",
+                "transport": "modbus_tcp",
+                "host": "127.0.0.1",
+                "port": port,
+                "upstream_unit_id": 12,
+                "timing": {
+                    "connect_timeout_s": 0.2,
+                    "response_timeout_s": 0.2,
+                    "total_request_timeout_s": 1,
+                    "minimum_request_interval_s": 0,
+                    "client_burst_idle_s": 0.05,
+                    "connect_settle_delay_s": 0,
+                    "reconnect_delay_s": 0,
+                    "max_connection_age_s": 0,
+                },
+            }
+        )
+        await self.proxy.start()
+        reader_a, writer_a = await asyncio.open_connection(
+            "127.0.0.1", self.proxy.bound_port
+        )
+        reader_b, writer_b = await asyncio.open_connection(
+            "127.0.0.1", self.proxy.bound_port
+        )
+        first_a = bytes.fromhex("0300000001")
+        second_a = bytes.fromhex("0300010001")
+        first_b = bytes.fromhex("0400000001")
+
+        writer_a.write(encode_tcp_adu(1, 7, first_a))
+        await writer_a.drain()
+        self.assertEqual((await read_tcp_adu(reader_a)).pdu, first_a)
+
+        writer_b.write(encode_tcp_adu(2, 7, first_b))
+        await writer_b.drain()
+        response_b = asyncio.create_task(read_tcp_adu(reader_b))
+        for _ in range(50):
+            if self.metrics.snapshot()["queue_depth"] == 1:
+                break
+            await asyncio.sleep(0.002)
+        self.assertEqual(self.metrics.snapshot()["queue_depth"], 1)
+
+        writer_a.write(encode_tcp_adu(3, 7, second_a))
+        await writer_a.drain()
+        self.assertEqual((await read_tcp_adu(reader_a)).pdu, second_a)
+        self.assertFalse(response_b.done())
+        self.assertEqual((await asyncio.wait_for(response_b, 0.5)).pdu, first_b)
+        self.assertEqual(upstream_order, [first_a, second_a, first_b])
+
+        writer_a.close()
+        writer_b.close()
+        await writer_a.wait_closed()
+        await writer_b.wait_closed()
+
     async def test_no_profile_returns_gateway_exception(self) -> None:
         await self.proxy.start()
         response = await self.request(bytes.fromhex("0300000001"))

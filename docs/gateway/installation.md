@@ -152,9 +152,13 @@ Enter the settings for the connection from the gateway to the controller:
 6. Keep **Maximum connection age** at `25 s` for the observed TROVIS controller behavior. The
    gateway then renews the TCP connection before the controller's approximately 30-second session
    boundary. Set it to `0` only when the controller supports unrestricted persistent sessions.
-7. Review the remaining timeouts, request spacing, and retry values.
-8. Select **Save**.
-9. Select **Activate** if this is not already the active profile.
+7. Keep **Client sequence idle window** at `0.25 s` when more than one application accesses the
+   proxy. This prevents Node-RED requests from being inserted into a TROVIS-VIEW or TROVIS 55 Pro
+   polling sequence. Increase it slightly only if a client pauses longer between requests; `0`
+   disables the protection.
+8. Review the remaining timeouts, request spacing, and retry values.
+9. Select **Save**.
+10. Select **Activate** if this is not already the active profile.
 
 Only one profile is active at a time. Changing the active profile does not
 require a rebuild or container restart.

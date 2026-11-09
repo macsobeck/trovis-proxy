@@ -19,7 +19,8 @@ integration and research harness; it is not part of the proxy core.
 - Controller connections via Modbus TCP, transparent RTU-over-TCP, or Serial RTU.
 - Docker Compose deployment for Linux servers and NAS systems such as Synology.
 - Persistent controller profiles with a responsive browser-based administration interface.
-- Serialized requests, safe read retries, protected writes, pacing, and proactive reconnects.
+- Multi-client sequence arbitration, safe read retries, protected writes, pacing, and proactive
+  reconnects.
 - Transparent operation with USR serial-to-Ethernet adapters in protocol mode `None`.
 - Controller-neutral proxy core without hard-coded register maps or synthetic values.
 
@@ -112,7 +113,8 @@ Follow the [step-by-step installation guide](docs/gateway/installation.md) for:
 - All Modbus PDUs, including FC01 addresses, are forwarded unchanged.
 - TCP connections are renewed after 25 seconds by default, before the observed 30-second controller
   session boundary; renewal occurs before a request and never retries an ambiguous write.
-- All requests to a controller are serialized and paced.
+- All requests to a controller are serialized and paced. Consecutive requests from one connected
+  client retain short-lived affinity so another client cannot interleave a polling sequence.
 
 See [gateway architecture](docs/gateway/architecture.md),
 [configuration](docs/gateway/configuration.md), and

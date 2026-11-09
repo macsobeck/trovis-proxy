@@ -3,15 +3,18 @@
 The generic data path is:
 
 ```text
-TROVIS-VIEW --Modbus TCP--> downstream listener
-    --> serialized proxy --> selected upstream transport --> controller
+TROVIS-VIEW / TROVIS 55 Pro / Node-RED --Modbus TCP--> downstream listener
+    --> client-sequence arbiter --> serialized proxy
+    --> selected upstream transport --> controller
 ```
 
 `trovis_gateway.proxy` is the only downstream Modbus TCP server. It parses only the MBAP
 envelope, captures the downstream Unit ID, and forwards the PDU without device interpretation.
-`UpstreamRouter` serializes and paces all controller requests. A transport backend applies the
-active profile's Unit ID and returns only the upstream PDU. The proxy then restores the original
-transaction and downstream Unit IDs.
+`UpstreamRouter` serializes and paces all controller requests. It also grants the active downstream
+connection a short, configurable idle window between consecutive requests. A waiting connection
+cannot insert a request into that sequence; it receives the controller after the owner becomes
+idle. A transport backend applies the active profile's Unit ID and returns only the upstream PDU.
+The proxy then restores the original transaction and downstream Unit IDs.
 
 The upstream transports are Modbus TCP, RTU-over-TCP, and Serial RTU. Switching controller or
 transport requires only profile configuration; no code branch or rebuild is expected. Unknown

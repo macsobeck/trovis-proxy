@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from abc import ABC, abstractmethod
+from collections import deque
 from time import monotonic
 from typing import Any
 
@@ -305,12 +306,18 @@ def _backend(profile: ControllerProfile) -> UpstreamBackend:
 
 
 class UpstreamRouter:
-    """One serialized request boundary for the active controller profile."""
+    """Serialized request boundary with short-lived downstream client affinity."""
 
     def __init__(self, metrics: GatewayMetrics, trace: GatewayTrace) -> None:
         self.metrics = metrics
         self.trace = trace
         self._lock = asyncio.Lock()
+        self._client_condition = asyncio.Condition()
+        self._client_owner: int | None = None
+        self._client_owner_active = False
+        self._client_owner_last_completed_at = 0.0
+        self._client_waiters: deque[int] = deque()
+        self._client_waiter_ids: set[int] = set()
         self._backend: UpstreamBackend | None = None
         self._fingerprint: tuple[object, ...] | None = None
         self._last_request_at = 0.0
@@ -329,17 +336,26 @@ class UpstreamRouter:
     async def request(
         self,
         *,
+        client_id: int,
         transaction_id: int,
         downstream_unit_id: int,
         pdu: bytes,
         profile: ControllerProfile,
     ) -> bytes:
         self.metrics.increment("queue_depth")
+        turn_acquired = False
+        lock_acquired = False
         try:
-            await self._lock.acquire()
-        finally:
-            self.metrics.increment("queue_depth", -1)
-        try:
+            try:
+                await self._acquire_client_turn(
+                    client_id,
+                    profile.timing.client_burst_idle_s,
+                )
+                turn_acquired = True
+                await self._lock.acquire()
+                lock_acquired = True
+            finally:
+                self.metrics.increment("queue_depth", -1)
             try:
                 return await asyncio.wait_for(
                     self._request_locked(
@@ -367,7 +383,92 @@ class UpstreamRouter:
                     timed_out=True,
                 ) from exc
         finally:
-            self._lock.release()
+            if lock_acquired:
+                self._lock.release()
+            if turn_acquired:
+                await self._complete_client_turn(client_id)
+
+    async def release_client(self, client_id: int) -> None:
+        """Release affinity immediately when a downstream connection closes."""
+        async with self._client_condition:
+            self._remove_waiter(client_id)
+            if self._client_owner == client_id:
+                self._client_owner = None
+                self._client_owner_active = False
+                self._client_owner_last_completed_at = 0.0
+            self._client_condition.notify_all()
+
+    async def _acquire_client_turn(self, client_id: int, idle_s: float) -> None:
+        async with self._client_condition:
+            if self._client_owner != client_id:
+                self._append_waiter(client_id)
+            try:
+                while True:
+                    now = monotonic()
+                    owner_idle = (
+                        self._client_owner is not None
+                        and not self._client_owner_active
+                    )
+                    if owner_idle and (
+                        idle_s == 0
+                        or now - self._client_owner_last_completed_at >= idle_s
+                    ):
+                        previous_owner = self._client_owner
+                        self._client_owner = None
+                        if previous_owner == client_id:
+                            self._append_waiter(client_id)
+
+                    if self._client_owner == client_id:
+                        self._client_owner_active = True
+                        return
+
+                    if self._client_owner is None:
+                        self._append_waiter(client_id)
+                        if self._client_waiters[0] == client_id:
+                            self._client_waiters.popleft()
+                            self._client_waiter_ids.remove(client_id)
+                            self._client_owner = client_id
+                            self._client_owner_active = True
+                            return
+
+                    timeout: float | None = None
+                    if self._client_owner is not None and not self._client_owner_active:
+                        timeout = max(
+                            0,
+                            idle_s - (monotonic() - self._client_owner_last_completed_at),
+                        )
+                    if timeout is None:
+                        await self._client_condition.wait()
+                    else:
+                        try:
+                            await asyncio.wait_for(
+                                self._client_condition.wait(),
+                                timeout,
+                            )
+                        except TimeoutError:
+                            pass
+            except BaseException:
+                self._remove_waiter(client_id)
+                self._client_condition.notify_all()
+                raise
+
+    async def _complete_client_turn(self, client_id: int) -> None:
+        async with self._client_condition:
+            if self._client_owner == client_id:
+                self._client_owner_active = False
+                self._client_owner_last_completed_at = monotonic()
+            self._client_condition.notify_all()
+
+    def _append_waiter(self, client_id: int) -> None:
+        if client_id not in self._client_waiter_ids:
+            self._client_waiters.append(client_id)
+            self._client_waiter_ids.add(client_id)
+
+    def _remove_waiter(self, client_id: int) -> None:
+        if client_id not in self._client_waiter_ids:
+            return
+        self._client_waiter_ids.remove(client_id)
+        self._client_waiters.remove(client_id)
 
     async def _request_locked(
         self,

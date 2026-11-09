@@ -72,6 +72,7 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("listen_port", profile)
         self.assertNotIn("compatibility", profile)
         self.assertEqual(profile["timing"]["max_connection_age_s"], 25)
+        self.assertEqual(profile["timing"]["client_burst_idle_s"], 0.25)
         _, status_body = await self.fetch("/api/status")
         self.assertNotIn("secret-value", status_body)
 
@@ -89,6 +90,7 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn('id="fc01-translation-enabled"', html)
         self.assertNotIn('id="fc01-address-offset"', html)
         self.assertIn('id="max-connection-age"', html)
+        self.assertIn('id="client-burst-idle"', html)
         self.assertNotIn("<details", html)
         self.assertNotIn('id="listen-port"', html)
         self.assertNotIn('id="downstream-unit-id"', html)

@@ -30,6 +30,7 @@ class ModbusProxy:
         self.metrics = metrics
         self.trace = trace
         self._server: asyncio.Server | None = None
+        self._next_client_id = 1
         self._logger = logging.getLogger("trovis_gateway.proxy")
 
     @property
@@ -53,6 +54,8 @@ class ModbusProxy:
         reader: asyncio.StreamReader,
         writer: asyncio.StreamWriter,
     ) -> None:
+        client_id = self._next_client_id
+        self._next_client_id += 1
         self.metrics.increment("downstream_clients")
         try:
             while True:
@@ -78,6 +81,7 @@ class ModbusProxy:
                 else:
                     try:
                         response_pdu = await self.router.request(
+                            client_id=client_id,
                             transaction_id=request.transaction_id,
                             downstream_unit_id=request.unit_id,
                             pdu=request.pdu,
@@ -101,6 +105,7 @@ class ModbusProxy:
                 except ConnectionError:
                     break
         finally:
+            await self.router.release_client(client_id)
             self.metrics.increment("downstream_clients", -1)
             writer.close()
             try:

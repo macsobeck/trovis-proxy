@@ -11,6 +11,13 @@ removes it. `key_mode` is fixed to `pass-through`, so the stored key is not inje
 and addresses are forwarded unchanged. Obsolete FC01 offset settings from earlier builds are
 removed automatically when the configuration is loaded.
 
+The **Client sequence idle window** defaults to `0.25` seconds. After a request completes, the same
+downstream TCP connection keeps controller affinity for this long. Consecutive requests from
+TROVIS-VIEW, TROVIS 55 Pro, or Node-RED therefore stay together instead of being interleaved with
+another client's polling sequence. Waiting clients are served in arrival order once the active
+client is idle. Set the value to `0` only to restore request-by-request arbitration. Clients must
+allow enough response time for a polling sequence already in progress.
+
 TCP profiles also limit a persistent upstream connection to `25` seconds by default. Before the
 next request would use an older connection, the gateway closes it, observes the configured
 reconnect delay, and opens a fresh connection. This avoids the approximately 30-second session
