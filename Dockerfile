@@ -1,5 +1,10 @@
 FROM python:3.12-slim
 
+RUN set -eux; \
+    apt-get update; \
+    apt-get upgrade --yes; \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 COPY pyproject.toml README.md /app/
 COPY src /app/src
@@ -7,7 +12,15 @@ COPY reference/fw309-register-matrix.json \
      reference/fw309_anlage21.json \
      reference/golden-comparison-map.json \
      /app/reference/
-RUN pip install --no-cache-dir '.[serial]'
+RUN set -eux; \
+    python -m pip install --no-cache-dir --upgrade 'pip==26.3'; \
+    python -m pip install --no-cache-dir '.[serial]'; \
+    python -m pip uninstall --yes pip; \
+    rm -rf \
+        /root/.cache/pip \
+        /usr/local/bin/pip* \
+        /usr/local/lib/python3.12/ensurepip/_bundled/pip*.whl \
+        /usr/local/lib/python3.12/site-packages/pip*
 
 ARG GATEWAY_UID=1000
 ARG GATEWAY_GID=1000
