@@ -24,22 +24,6 @@ integration and research harness; it is not part of the proxy core.
 - Transparent operation with USR serial-to-Ethernet adapters in protocol mode `None`.
 - Controller-neutral proxy core without hard-coded register maps or synthetic values.
 
-## Interface examples
-
-### Gateway status
-
-![TROVIS Proxy Gateway status dashboard for TROVIS-VIEW and a SAMSON controller](docs/images/gateway-status.png)
-
-*Status overview for the TROVIS-VIEW listener and the active upstream controller connection.*
-
-### Controller connection
-
-![TROVIS Proxy Gateway RTU-over-TCP controller profile](docs/images/controller-connection.png)
-
-*Controller profile using RTU-over-TCP with its target, Modbus unit ID, and access settings.*
-
-*Private network addresses are redacted in both interface examples.*
-
 ## Why this proxy gateway
 
 I use TROVIS-VIEW to manage the configuration of my SAMSON TROVIS 5573-1xxx heating controller.
@@ -72,6 +56,20 @@ strengths:
   always-on Linux hosts.
 - **Operational visibility:** The status interface shows connected clients, queued requests,
   retries, timeouts, reconnects, and the active controller connection.
+
+### Gateway status
+
+![TROVIS Proxy Gateway status dashboard for TROVIS-VIEW and a SAMSON controller](docs/images/gateway-status.png)
+
+*Status overview for the TROVIS-VIEW listener and the active upstream controller connection.*
+
+### Controller connection
+
+![TROVIS Proxy Gateway RTU-over-TCP controller profile](docs/images/controller-connection.png)
+
+*Controller profile using RTU-over-TCP with its target, Modbus unit ID, and access settings.*
+
+*Private network addresses are redacted in both interface examples.*
 
 ![USR adapter configured for transparent RTU-over-TCP operation](docs/images/usr-adapter-settings.png)
 
