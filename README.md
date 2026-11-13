@@ -16,6 +16,7 @@ read-only integration and research harness; it is not part of the Modbus Proxy c
 ## Key features
 
 - Reliable TROVIS-VIEW access through a stable Modbus TCP listener on port `7112`.
+- Stable controller firmware upgrades through TROVIS-VIEW using the same reliable proxy connection.
 - Controller connections via Modbus TCP, transparent RTU-over-TCP, or Serial RTU.
 - Docker Compose deployment for Linux servers and NAS systems such as Synology.
 - Persistent controller profiles with a responsive browser-based administration interface.
@@ -43,6 +44,10 @@ strengths:
 - **Coordinated multi-client access:** TROVIS-VIEW, Node-RED, TROVIS 55 Pro, and other Modbus TCP
   clients can access the same controller through one Modbus Proxy. Client request sequences are
   queued and kept together to prevent competing applications from causing failed controller reads.
+- **Stable firmware upgrades:** With the adapter in transparent `None` mode and the Modbus Proxy
+  using `RTU-over-TCP`, serial Modbus RTU frames are transported without being decoded or rewritten
+  by the adapter. Their Modbus PDU payloads remain unchanged, avoiding adapter-side protocol
+  conversion and providing a stable path for TROVIS-VIEW firmware upgrades.
 - **Transparent protocol handling:** Modbus function codes, addresses, and values are forwarded
   unchanged. The Modbus Proxy does not depend on a controller-specific register map or synthetic
   address translation.
