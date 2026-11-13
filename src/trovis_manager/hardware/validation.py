@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from time import monotonic
 
@@ -99,7 +99,7 @@ class HardwareValidator:
     ) -> tuple[HardwareRunRecord, ConfigurationSnapshot | None]:
         self.manager.reset_metrics()
         self.manager.trace_context = {"run": number}
-        started_at = datetime.now(timezone.utc)
+        started_at = datetime.now(UTC)
         started = monotonic()
         snapshot: ConfigurationSnapshot | None = None
         identity: ControllerIdentity | None = None
@@ -113,7 +113,7 @@ class HardwareValidator:
             snapshot_file = str(relative)
         except Exception as exc:
             error = f"{type(exc).__name__}: {exc}"
-        ended_at = datetime.now(timezone.utc)
+        ended_at = datetime.now(UTC)
         metrics = CommunicationMetrics.model_validate(
             self.manager.metrics_snapshot().as_dict()
         )
@@ -139,7 +139,7 @@ class HardwareValidator:
 
     @staticmethod
     def _output_directory(root: Path) -> Path:
-        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
+        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S.%fZ")
         path = root / stamp
         path.mkdir(parents=True, exist_ok=False)
         return path

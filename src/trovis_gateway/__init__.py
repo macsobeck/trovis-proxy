@@ -1,3 +1,3 @@
-"""Device- and firmware-agnostic TROVIS Proxy Gateway."""
+"""Device- and firmware-agnostic TROVIS Modbus Proxy."""
 
-__version__ = "1.1"
+__version__ = "1.1.1"

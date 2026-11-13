@@ -1,8 +1,8 @@
 # Architecture
 
 > This document describes the device-specific, read-only `trovis_manager`
-> research harness. The product proxy is a separate generic component; see
-> [Gateway Architecture](gateway/architecture.md).
+> research harness. The product Modbus Proxy is a separate generic component; see
+> [Modbus Proxy Architecture](gateway/architecture.md).
 
 ## Layers
 

@@ -1,7 +1,7 @@
 # Implementation Plan
 
 > This roadmap applies to the device-specific `trovis_manager` research
-> harness. The generic gateway has its own architecture and safety boundaries
+> harness. The generic Modbus Proxy has its own architecture and safety boundaries
 > under `docs/gateway/`.
 
 ## P0 — identify and back up FW 3.09

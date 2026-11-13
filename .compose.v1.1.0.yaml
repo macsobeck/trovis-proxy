@@ -2,7 +2,7 @@ name: trovis-proxy
 
 services:
   gateway:
-    image: ghcr.io/macsobeck/trovis-proxy:1.1.0
+    image: docker.io/macsobeck/trovis-proxy:1.1.0
     restart: unless-stopped
     ports:
       - "7112:7112"

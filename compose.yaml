@@ -2,13 +2,7 @@ name: trovis-proxy
 
 services:
   gateway:
-    image: trovis-proxy:1.1
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        GATEWAY_UID: ${GATEWAY_UID:-1000}
-        GATEWAY_GID: ${GATEWAY_GID:-1000}
+    image: docker.io/macsobeck/trovis-proxy:latest
     restart: unless-stopped
     ports:
       - "7112:7112"

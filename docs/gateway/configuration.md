@@ -1,4 +1,4 @@
-# Gateway Configuration
+# Modbus Proxy Configuration
 
 Controller profiles are stored atomically in `/data/config.json` by default. The file is created
 with owner-only permissions (`0600`) and should be backed by a persistent Docker volume. Several
@@ -19,7 +19,7 @@ client is idle. Set the value to `0` only to restore request-by-request arbitrat
 allow enough response time for a polling sequence already in progress.
 
 TCP profiles also limit a persistent upstream connection to `25` seconds by default. Before the
-next request would use an older connection, the gateway closes it, observes the configured
+next request would use an older connection, the Modbus Proxy closes it, observes the configured
 reconnect delay, and opens a fresh connection. This avoids the approximately 30-second session
 boundary observed in controller captures. The renewal happens before a request is sent, so it does
 not repeat an ambiguous write. Set the maximum connection age to `0` to disable this behavior.

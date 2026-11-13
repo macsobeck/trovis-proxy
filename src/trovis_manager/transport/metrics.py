@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field, replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -57,7 +57,7 @@ class RequestTrace:
             error = {"type": type(exception).__name__, "message": str(exception)}
         return cls(
             sequence=sequence,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             function_code=function_code,
             address=address,
             count=count,

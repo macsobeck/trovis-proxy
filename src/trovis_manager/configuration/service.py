@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Iterable
+from collections.abc import Iterable
 
 from trovis_manager.catalog import RegisterCatalog
 from trovis_manager.codec import decode_words

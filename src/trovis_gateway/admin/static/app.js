@@ -135,12 +135,12 @@ async function refreshStatus() {
   try {
     const status = await api("/api/status"), metrics = status.metrics, active = status.active_profile;
     $("release-version").textContent = `Release ${status.version}`;
-    $("health-dot").classList.add("ok"); $("health-label").textContent = "Gateway ready";
+    $("health-dot").classList.add("ok"); $("health-label").textContent = "Modbus Proxy ready";
     $("listener").textContent = `${status.listener.address}:${status.listener.port}`;
     $("requests").textContent = metrics.requests; $("clients").textContent = metrics.downstream_clients; $("queue").textContent = metrics.queue_depth; $("retries").textContent = metrics.retries; $("timeouts").textContent = metrics.timeouts; $("reconnects").textContent = metrics.reconnects;
     $("active-profile-name").textContent = active ? active.name : "No active profile"; $("active-profile-target").textContent = active ? `${target(active)} · Unit ${active.upstream_unit_id}` : "Create a profile under Controller connection.";
     $("upstream-badge").textContent = metrics.upstream_connected ? "Connected" : "Disconnected"; $("upstream-badge").classList.toggle("ok", metrics.upstream_connected);
-  } catch (_) { $("health-dot").classList.remove("ok"); $("health-label").textContent = "Gateway unavailable"; }
+  } catch (_) { $("health-dot").classList.remove("ok"); $("health-label").textContent = "Modbus Proxy unavailable"; }
 }
 
 document.querySelectorAll(".nav-button").forEach(button => button.addEventListener("click", () => showView(button.dataset.view)));

@@ -1,10 +1,10 @@
-# Gateway Architecture
+# Modbus Proxy Architecture
 
 The generic data path is:
 
 ```text
 TROVIS-VIEW / TROVIS 55 Pro / Node-RED --Modbus TCP--> downstream listener
-    --> client-sequence arbiter --> serialized proxy
+    --> client-sequence arbiter --> serialized Modbus Proxy
     --> selected upstream transport --> controller
 ```
 
@@ -14,7 +14,7 @@ envelope, captures the downstream Unit ID, and forwards the PDU without device i
 connection a short, configurable idle window between consecutive requests. A waiting connection
 cannot insert a request into that sequence; it receives the controller after the owner becomes
 idle. A transport backend applies the active profile's Unit ID and returns only the upstream PDU.
-The proxy then restores the original transaction and downstream Unit IDs.
+The Modbus Proxy then restores the original transaction and downstream Unit IDs.
 
 The upstream transports are Modbus TCP, RTU-over-TCP, and Serial RTU. Switching controller or
 transport requires only profile configuration; no code branch or rebuild is expected. Unknown

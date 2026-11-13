@@ -1,4 +1,4 @@
-"""Command-line entry point for infrastructure-only gateway settings."""
+"""Command-line entry point for infrastructure-only Modbus Proxy settings."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from .config import InfrastructureSettings
 
 def parser() -> argparse.ArgumentParser:
     defaults = InfrastructureSettings.from_environment()
-    command = argparse.ArgumentParser(description="Generic TROVIS Proxy Gateway")
+    command = argparse.ArgumentParser(description="Generic TROVIS Modbus Proxy")
     command.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     command.add_argument("--listen-host", default=defaults.listen_host)
     command.add_argument("--listen-port", type=int, default=defaults.listen_port)

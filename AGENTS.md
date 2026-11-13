@@ -4,7 +4,7 @@
 
 This Python 3.12 repository has two deliberately separate areas:
 
-- `src/trovis_gateway/` is the generic proxy gateway: Modbus framing, upstream transports, profile storage, admin API, and static UI.
+- `src/trovis_gateway/` is the generic Modbus Proxy: Modbus framing, upstream transports, profile storage, admin API, and static UI.
 - `src/trovis_manager/` is the read-only TROVIS 5573-1 FW 3.09 research and validation harness.
 - `tests/gateway/`, `tests/unit/`, and `tests/integration/` mirror those responsibilities.
 - `reference/` contains immutable inputs and derived firmware research; `docs/` records architecture and safety evidence.
@@ -18,10 +18,11 @@ python -m pip install -e '.[dev,serial]'
 pytest
 ruff check .
 trovis-gateway --config-path ./data/config.json
-docker compose up --build
+docker compose pull
+docker compose up -d
 ```
 
-`pytest` uses fake local controllers; no default test may require hardware. `trovis-gateway` starts the proxy and local admin UI. Run `git diff --check` before committing.
+`pytest` uses fake local controllers; no default test may require hardware. `trovis-gateway` starts the Modbus Proxy and local admin UI. Run `git diff --check` before committing.
 
 ## Coding Style & Naming Conventions
 
@@ -33,8 +34,8 @@ Name tests after behavior, such as `test_write_timeout_is_not_retried`. Protocol
 
 ## Commit & Pull Request Guidelines
 
-History uses short, capitalized, imperative subjects without trailing periods, for example `Add generic Modbus gateway`. Keep commits focused. Pull requests should explain scope and safety impact, link issues, list validation commands, and include screenshots for UI changes.
+History uses short, capitalized, imperative subjects without trailing periods, for example `Add generic Modbus Proxy`. Keep commits focused. Pull requests should explain scope and safety impact, link issues, list validation commands, and include screenshots for UI changes.
 
 ## Security & Protocol Safety
 
-Never log or expose access keys. The current key mode is pass-through: store the value, but do not inject it. Transparent downstream write PDUs may be forwarded, but the gateway must never invent writes or retry one after an ambiguous result. Keep the research CLI read-only until its documented hardware gate passes.
+Never log or expose access keys. The current key mode is pass-through: store the value, but do not inject it. Transparent downstream write PDUs may be forwarded, but the Modbus Proxy must never invent writes or retry one after an ambiguous result. Keep the research CLI read-only until its documented hardware gate passes.

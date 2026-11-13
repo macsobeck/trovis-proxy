@@ -1,4 +1,4 @@
-"""Gateway process lifecycle."""
+"""Modbus Proxy process lifecycle."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ class GatewayApplication:
         )
         self.admin.start()
         logging.getLogger("trovis_gateway").info(
-            "Gateway listening on %s:%s; admin on %s:%s",
+            "Modbus Proxy listening on %s:%s; admin on %s:%s",
             self.settings.listen_host,
             self.proxy.bound_port,
             self.settings.admin_host,

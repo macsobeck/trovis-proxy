@@ -7,7 +7,6 @@ import struct
 from dataclasses import dataclass
 from enum import StrEnum
 
-
 MAX_MODBUS_PDU = 253
 
 

@@ -70,8 +70,8 @@ jobs:
           labels: |
             org.opencontainers.image.source=https://github.com/macsobeck/trovis-proxy
             org.opencontainers.image.documentation=https://github.com/macsobeck/trovis-proxy
-            org.opencontainers.image.title=TROVIS Proxy
-            org.opencontainers.image.description=Modbus proxy gateway for SAMSON TROVIS heating controllers
+            org.opencontainers.image.title=TROVIS Modbus Proxy
+            org.opencontainers.image.description=Multi-client Modbus Proxy for TROVIS-VIEW, TROVIS 55 Pro, Node-RED, and SAMSON heating controllers
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v7

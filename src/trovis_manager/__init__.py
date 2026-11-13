@@ -3,4 +3,4 @@
 from .models import ConfigurationSnapshot, ControllerIdentity, DataPoint
 
 __all__ = ["ConfigurationSnapshot", "ControllerIdentity", "DataPoint"]
-__version__ = "1.1"
+__version__ = "1.1.1"

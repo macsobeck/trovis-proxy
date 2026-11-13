@@ -1,9 +1,9 @@
 FROM python:3.12-slim
 
-ARG IMAGE_VERSION=1.1.0
+ARG IMAGE_VERSION=1.1.1
 
-LABEL org.opencontainers.image.title="TROVIS Proxy Gateway" \
-      org.opencontainers.image.description="Multi-client Modbus proxy for TROVIS-VIEW, TROVIS 55 Pro, Node-RED, and SAMSON heating controllers" \
+LABEL org.opencontainers.image.title="TROVIS Modbus Proxy" \
+      org.opencontainers.image.description="Multi-client Modbus Proxy for TROVIS-VIEW, TROVIS 55 Pro, Node-RED, and SAMSON heating controllers" \
       org.opencontainers.image.source="https://github.com/macsobeck/trovis-proxy" \
       org.opencontainers.image.url="https://github.com/macsobeck/trovis-proxy" \
       org.opencontainers.image.version="${IMAGE_VERSION}" \

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from time import monotonic
-from typing import Awaitable, Callable, TypeVar
+from typing import TypeVar
 
 from .base import Transport
 from .metrics import RequestMetrics, RequestTrace

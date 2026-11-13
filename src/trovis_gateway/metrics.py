@@ -1,4 +1,4 @@
-"""Thread-safe operational state shared by proxy and status API."""
+"""Thread-safe operational state shared by the Modbus Proxy and status API."""
 
 from __future__ import annotations
 

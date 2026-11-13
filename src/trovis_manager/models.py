@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -142,7 +142,7 @@ class ConfigurationSnapshot(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     schema_version: str = "1.0"
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     controller: ControllerIdentity
     firmware: str
     serial_number: str | None

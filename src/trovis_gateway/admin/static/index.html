@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>TROVIS Proxy Gateway</title>
+  <title>TROVIS Modbus Proxy</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#status" aria-label="Gateway home">
+    <a class="brand" href="#status" aria-label="Modbus Proxy home">
       <span class="brand-mark" aria-hidden="true">TG</span>
-      <span><strong>TROVIS</strong><small>Proxy Gateway</small></span>
+      <span><strong>TROVIS</strong><small>Modbus Proxy</small></span>
     </a>
     <nav aria-label="Main navigation">
       <button class="nav-button active" data-view="status">Status</button>
@@ -23,14 +23,14 @@
   <main>
     <section id="status-view" class="view" aria-labelledby="status-title">
       <div class="page-heading">
-        <div><p class="eyebrow">Operations overview</p><h1 id="status-title">Gateway status</h1></div>
+        <div><p class="eyebrow">Operations overview</p><h1 id="status-title">Modbus Proxy status</h1></div>
         <button class="secondary" id="refresh-status">Refresh</button>
       </div>
 
       <div class="status-columns">
         <article class="card parameter-cluster status-cluster">
           <header class="cluster-heading">
-            <div><p class="cluster-kicker">Downstream</p><h2>Gateway</h2></div>
+            <div><p class="cluster-kicker">Downstream</p><h2>Modbus Proxy</h2></div>
             <span class="status-indicator status-indicator-ok">Ready</span>
           </header>
           <div class="parameter-list status-list">
@@ -55,12 +55,12 @@
           </div>
         </article>
       </div>
-      <aside class="notice"><strong>Safety boundary</strong><span>The gateway forwards Modbus PDUs transparently. A stored access key is not inserted into messages in pass-through mode.</span></aside>
+      <aside class="notice"><strong>Safety boundary</strong><span>The Modbus Proxy forwards Modbus PDUs transparently. A stored access key is not inserted into messages in pass-through mode.</span></aside>
     </section>
 
     <section id="profiles-view" class="view hidden" aria-labelledby="profiles-title">
       <div class="page-heading">
-        <div><p class="eyebrow">Gateway → Controller</p><h1 id="profiles-title">Controller connection</h1><p class="subtitle">Manage the controller transport, target, and timing.</p></div>
+        <div><p class="eyebrow">Modbus Proxy → Controller</p><h1 id="profiles-title">Controller connection</h1><p class="subtitle">Manage the controller transport, target, and timing.</p></div>
         <button class="primary" id="new-profile">New profile</button>
       </div>
 
@@ -87,7 +87,7 @@
 
           <section class="card parameter-cluster">
             <header class="cluster-heading">
-              <div><p class="cluster-kicker">Connection path</p><h2>Transport and target</h2><p>Only the connection from the gateway to the controller.</p></div>
+              <div><p class="cluster-kicker">Connection path</p><h2>Transport and target</h2><p>Only the connection from the Modbus Proxy to the controller.</p></div>
             </header>
             <div class="parameter-list">
               <div class="parameter-row">
@@ -184,7 +184,7 @@
       </div>
     </section>
   </main>
-  <footer class="site-footer"><span id="release-version">Release 1.1</span><span aria-hidden="true"> · </span>Design by macsobeck</footer>
+  <footer class="site-footer"><span id="release-version">Release 1.1.1</span><span aria-hidden="true"> · </span>Design by macsobeck</footer>
   <script src="/app.js" defer></script>
 </body>
 </html>

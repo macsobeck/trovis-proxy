@@ -51,7 +51,7 @@ class SerialSettings(BaseModel):
 
 
 class ControllerProfile(BaseModel):
-    """Only the Gateway → controller side of the connection."""
+    """Only the Modbus Proxy → controller side of the connection."""
 
     model_config = ConfigDict(extra="forbid")
 
