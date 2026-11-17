@@ -1,5 +1,7 @@
 # TROVIS Modbus Proxy for TROVIS-VIEW and SAMSON Controllers
 
+English | [Deutsch](README.de.md)
+
 The **TROVIS Modbus Proxy** is a self-hosted Modbus Proxy for reliable communication between
 **SAMSON TROVIS-VIEW** and TROVIS heating controllers, including the **SAMSON TROVIS 5573-1xxx**
 series. It provides a stable Modbus TCP endpoint for TROVIS-VIEW and connects to the controller
@@ -125,9 +127,10 @@ Profile data persists in the host directory `./data` and appears as `/data/confi
 Docker container with mode `0600`. A stored access key is masked in the API and UI and is not
 logged, exposed as a metric, or injected into protocol traffic.
 
-## Installation guide
+## Installation guides
 
-Follow the [step-by-step installation guide](docs/gateway/installation.md) for:
+Choose the [English installation guide](docs/gateway/installation.md) or the
+[German installation guide](docs/gateway/installation.de.md) for:
 
 - Docker and Docker Compose prerequisites;
 - Synology NAS deployment, bind mounts, UID/GID ownership, and persistent storage;

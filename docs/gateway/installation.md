@@ -1,5 +1,7 @@
 # Installation Guide
 
+English | [Deutsch](installation.de.md)
+
 This guide installs the TROVIS Modbus Proxy and connects it between
 TROVIS-VIEW and a controller.
 
