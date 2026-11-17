@@ -33,18 +33,14 @@ The provided Compose configuration publishes the administration website on
 host port `8083`. Allow access only from the trusted LAN; do not expose this
 port to the Internet.
 
-## 2. Choose an image policy
+## 2. Image policy
 
-Both Compose files use prebuilt public images and the same persistent `./data` directory. Neither
-file builds the repository's `Dockerfile` during installation.
+The provided `compose.yaml` uses the current prebuilt public image and stores persistent data in
+the `./data` directory. It pulls `docker.io/macsobeck/trovis-proxy:latest` from Docker Hub for AMD64
+or ARM64 and does not build the repository's `Dockerfile` during installation.
 
-| Compose file | Choose it when | Image policy |
-|---|---|---|
-| **`compose.yaml`** (recommended) | You want the current release and regular image updates. | Pulls `docker.io/macsobeck/trovis-proxy:latest` from Docker Hub for AMD64 or ARM64. |
-| **`.compose.v1.1.0.yaml`** | You need a reproducible rollback deployment on release 1.1.0. | Pulls the pinned Docker Hub image `docker.io/macsobeck/trovis-proxy:1.1.0`. |
-
-Use `compose.yaml` for normal NAS and Linux installations. The `Dockerfile` is retained for project
-development and publishing new images, not for the standard installation workflow.
+The `Dockerfile` is retained for project development and publishing new images, not for the
+standard installation workflow.
 
 ## 3. Obtain the project files
 
@@ -55,12 +51,12 @@ git clone https://github.com/macsobeck/trovis-proxy.git
 cd trovis-proxy
 ```
 
-If the repository is already present, open a terminal in its root directory. A standard
-installation requires `compose.yaml`; a pinned 1.1.0 rollback uses `.compose.v1.1.0.yaml`.
+If the repository is already present, open a terminal in its root directory. The installation
+uses `compose.yaml`.
 
 ## 4. Prepare persistent storage
 
-Both Compose files store the configuration in the host directory `./data`. Create it before
+The Compose file stores the configuration in the host directory `./data`. Create it before
 starting the Modbus Proxy:
 
 ```bash
@@ -72,9 +68,7 @@ sudo chmod 755 data
 The published images run with the fixed UID and GID `1000`. The commands above provide the
 required write access on Linux and NAS systems.
 
-## 5. Pull the selected image
-
-### Latest image with `compose.yaml` (recommended)
+## 5. Pull the image
 
 Validate the standard Compose file and pull the latest public multi-platform image. No registry
 login is required; Docker automatically selects Linux AMD64 or ARM64.
@@ -90,21 +84,6 @@ The image reference is:
 docker.io/macsobeck/trovis-proxy:latest
 ```
 
-### Pinned rollback release 1.1.0 with `.compose.v1.1.0.yaml`
-
-Use the pinned Compose file when the installation must remain reproducible:
-
-```bash
-docker compose -f .compose.v1.1.0.yaml config --quiet
-docker compose -f .compose.v1.1.0.yaml pull
-```
-
-The pinned image reference is:
-
-```text
-docker.io/macsobeck/trovis-proxy:1.1.0
-```
-
 The image includes the optional Serial RTU dependency. The default ports are:
 
 | Purpose | Host binding | Container port |
@@ -114,23 +93,14 @@ The image includes the optional Serial RTU dependency. The default ports are:
 
 ## 6. Start the Modbus Proxy
 
-Start the selected image in the background.
-
-For the **latest image**:
+Start the image in the background:
 
 ```bash
 docker compose up -d
 docker compose ps
 ```
 
-For the **pinned 1.1.0 image**:
-
-```bash
-docker compose -f .compose.v1.1.0.yaml up -d
-docker compose -f .compose.v1.1.0.yaml ps
-```
-
-Confirm that the Modbus Proxy is healthy; this check is identical for both image policies:
+Confirm that the Modbus Proxy is healthy:
 
 ```bash
 curl http://127.0.0.1:8083/health
@@ -142,14 +112,10 @@ The health endpoint should return:
 {"status":"ok"}
 ```
 
-If startup fails, inspect the logs with the command for the selected variant:
+If startup fails, inspect the logs:
 
 ```bash
-# Latest image
 docker compose logs --tail=100 gateway
-
-# Pinned 1.1.0 image
-docker compose -f .compose.v1.1.0.yaml logs --tail=100 gateway
 ```
 
 ## 7. Open the administration website
@@ -239,11 +205,7 @@ Open the **Status** page and check:
 Follow live logs when diagnosing communication:
 
 ```bash
-# Latest image
 docker compose logs -f gateway
-
-# Pinned 1.1.0 image
-docker compose -f .compose.v1.1.0.yaml logs -f gateway
 ```
 
 The current NAS Compose configuration enables raw Modbus PDU tracing with
@@ -251,11 +213,7 @@ The current NAS Compose configuration enables raw Modbus PDU tracing with
 after troubleshooting and recreate the container:
 
 ```bash
-# Latest image
 docker compose up -d --force-recreate
-
-# Pinned 1.1.0 image
-docker compose -f .compose.v1.1.0.yaml up -d --force-recreate
 ```
 
 ## 12. Persistence and backups
@@ -266,41 +224,20 @@ Profiles are stored in `./data/config.json` on the Docker host and mounted as
 
 Create a backup after configuring the Modbus Proxy.
 
-For the **latest image**:
-
 ```bash
 docker compose exec -T gateway sh -c 'cat /data/config.json' > modbus-proxy-config-backup.json
 chmod 600 modbus-proxy-config-backup.json
 ```
 
-For the **pinned 1.1.0 image**:
-
-```bash
-docker compose -f .compose.v1.1.0.yaml exec -T gateway \
-  sh -c 'cat /data/config.json' > modbus-proxy-config-backup.json
-chmod 600 modbus-proxy-config-backup.json
-```
-
 The backup contains the stored access key in clear text. Protect it accordingly.
 
-Restore a backup with the commands for the selected image.
-
-For the **latest image**:
+Restore a backup with:
 
 ```bash
 docker compose stop gateway
 docker compose run --rm --no-deps -T --entrypoint sh gateway \
   -c 'umask 077; cat > /data/config.json' < modbus-proxy-config-backup.json
 docker compose up -d
-```
-
-For the **pinned 1.1.0 image**:
-
-```bash
-docker compose -f .compose.v1.1.0.yaml stop gateway
-docker compose -f .compose.v1.1.0.yaml run --rm --no-deps -T --entrypoint sh gateway \
-  -c 'umask 077; cat > /data/config.json' < modbus-proxy-config-backup.json
-docker compose -f .compose.v1.1.0.yaml up -d
 ```
 
 ## 13. Update the installation
@@ -314,21 +251,12 @@ docker compose up -d
 docker compose ps
 ```
 
-For the pinned 1.1.0 installation, update only the project files while retaining the pinned image:
-
-```bash
-git pull --ff-only
-docker compose -f .compose.v1.1.0.yaml pull
-docker compose -f .compose.v1.1.0.yaml up -d
-docker compose -f .compose.v1.1.0.yaml ps
-```
-
 The bind-mounted `./data` directory remains attached to the replacement container.
 
 ## 14. Serial RTU with Docker
 
 On Linux, pass the serial device into the service by adding this under
-`services.gateway` in the Compose file selected for the installation:
+`services.gateway` in `compose.yaml`:
 
 ```yaml
 devices:
