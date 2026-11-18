@@ -30,6 +30,27 @@ Forschungsumgebung; er ist nicht Bestandteil des Modbus-Proxy-Kerns.
 - Transparenter Betrieb mit seriellen USR-Ethernet-Adaptern im Protokollmodus `None`.
 - Reglerneutraler Modbus-Proxy-Kern ohne fest hinterlegte Registertabellen oder synthetische Werte.
 
+## Sicherheitshinweis – OpenSSL-Befunde
+
+Docker Scout meldet derzeit sechs Befunde, die aus dem OpenSSL-3.5.7-Laufzeitpaket von Debian 13
+stammen. Sie haben ihren Ursprung nicht im Quellcode des TROVIS Modbus Proxy.
+
+Der Proxy verwendet unverschlüsseltes Modbus TCP und serielle Kommunikation. Die betroffenen
+Funktionen für QUIC, AES-GCM-SIV, CMS-Verschlüsselung und spezielle PEM-Stack-Verarbeitung werden
+nicht direkt verwendet. Die aktuelle Gefährdung erscheint deshalb begrenzt. Die Befunde bleiben
+dennoch sichtbar, bis korrigierte Pakete verfügbar sind.
+
+OpenSSL hat korrigierte Upstream-Versionen für den **1. Dezember 2026** angekündigt. Sobald auch
+ein entsprechend korrigiertes Debian-Paket verfügbar ist, wird das Container-Image neu erstellt,
+für AMD64 und ARM64 getestet, erneut geprüft und als Wartungsversion veröffentlicht.
+
+Durch diesen Hinweis wird keine Schwachstelle unterdrückt oder als behoben gekennzeichnet.
+
+Weitere Informationen:
+
+- https://openssl-library.org/news/secadv/20261110.txt
+- https://openssl-library.org/news/secadv/20261117.txt
+
 ## Warum dieser Modbus Proxy?
 
 Ich verwende TROVIS-VIEW mit dem Modbus-Protokoll, um die Konfiguration meines Heizungsreglers

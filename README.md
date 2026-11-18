@@ -27,6 +27,26 @@ read-only integration and research harness; it is not part of the Modbus Proxy c
 - Transparent operation with USR serial-to-Ethernet adapters in protocol mode `None`.
 - Controller-neutral Modbus Proxy core without hard-coded register maps or synthetic values.
 
+## Security notice – OpenSSL findings
+
+Docker Scout currently reports six findings inherited from the Debian 13 OpenSSL 3.5.7 runtime
+package. They do not originate from the TROVIS Modbus Proxy source code.
+
+The proxy uses plain Modbus TCP and serial communication and does not directly use the affected
+QUIC, AES-GCM-SIV, CMS encryption, or special PEM-stack functions. The current exposure therefore
+appears limited, but the findings will remain visible until corrected packages are available.
+
+OpenSSL has announced fixed upstream releases for **1 December 2026**. Once the corresponding
+corrected Debian package is available, the container will be rebuilt, tested for AMD64 and ARM64,
+rescanned, and published as a maintenance release.
+
+No vulnerability has been suppressed or marked as resolved by this notice.
+
+Further information:
+
+- https://openssl-library.org/news/secadv/20261110.txt
+- https://openssl-library.org/news/secadv/20261117.txt
+
 ## Why this Modbus Proxy
 
 I use TROVIS-VIEW with Modbus protocol to manage the configuration of my SAMSON TROVIS 5573-1xxx
