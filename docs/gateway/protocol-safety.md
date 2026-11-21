@@ -21,5 +21,14 @@ function code, classification, address/count when recognizable, duration, and re
 PDU hex is emitted only when `MODBUS_TRACE` is enabled. Access keys are never passed to tracing,
 metrics, health responses, or protocol backends.
 
+## Upstream response correlation
+
+Every upstream response is checked against the current request before it is returned to a client.
+The function code must match (or be its Modbus exception form), read byte counts must match the
+requested quantity, and write acknowledgements must echo the required request fields. A mismatch
+is treated as a lost stream boundary: the response is rejected and the upstream connection is
+closed so that all already buffered frames are discarded. Reads may then be retried on a new
+connection; a write that may already have reached the controller is never repeated.
+
 An unreachable or unconfigured upstream produces Modbus exception `0x0B` (target device
 failed to respond). The original downstream transaction and Unit IDs are retained in that reply.

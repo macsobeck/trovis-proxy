@@ -213,7 +213,13 @@ class ProxyTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_fc01_is_forwarded_unchanged(self) -> None:
         async def echo(request: ModbusTcpAdu, writer: asyncio.StreamWriter) -> None:
-            writer.write(encode_tcp_adu(request.transaction_id, request.unit_id, request.pdu))
+            writer.write(
+                encode_tcp_adu(
+                    request.transaction_id,
+                    request.unit_id,
+                    bytes.fromhex("01020000"),
+                )
+            )
             await writer.drain()
 
         controller = await self.start_controller(echo)
@@ -279,6 +285,71 @@ class ProxyTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.pdu, bytes.fromhex("0302002a"))
         self.assertEqual(decode_rtu_adu(received[0], 12), bytes.fromhex("0300000001"))
 
+    async def test_rtu_response_mismatch_reconnects_before_retrying_read(self) -> None:
+        connections = 0
+        received: list[bytes] = []
+
+        async def raw_client(
+            reader: asyncio.StreamReader,
+            writer: asyncio.StreamWriter,
+        ) -> None:
+            nonlocal connections
+            connections += 1
+            connection = connections
+            try:
+                frame = await reader.readexactly(8)
+                received.append(frame)
+                if connection == 1:
+                    writer.write(
+                        encode_rtu_adu(12, bytes.fromhex("03020011"))
+                        + encode_rtu_adu(12, bytes.fromhex("010101"))
+                    )
+                else:
+                    writer.write(encode_rtu_adu(12, bytes.fromhex("010100")))
+                await writer.drain()
+                await reader.read()
+            except (asyncio.IncompleteReadError, ConnectionError):
+                pass
+            finally:
+                writer.close()
+                try:
+                    await writer.wait_closed()
+                except Exception:
+                    pass
+
+        server = await asyncio.start_server(raw_client, "127.0.0.1", 0)
+        self.raw_servers.append(server)
+        assert server.sockets
+        port = int(server.sockets[0].getsockname()[1])
+        self.store.upsert_profile(
+            {
+                "name": "RTU resynchronization",
+                "transport": "rtu_over_tcp",
+                "host": "127.0.0.1",
+                "port": port,
+                "upstream_unit_id": 12,
+                "timing": {
+                    "connect_timeout_s": 0.2,
+                    "response_timeout_s": 0.2,
+                    "total_request_timeout_s": 1,
+                    "minimum_request_interval_s": 0,
+                    "connect_settle_delay_s": 0,
+                    "reconnect_delay_s": 0,
+                    "max_connection_age_s": 0,
+                },
+                "retry": {"read_retries": 1, "write_retries": 0},
+            }
+        )
+        await self.proxy.start()
+
+        response = await self.request(bytes.fromhex("01003b0001"))
+
+        self.assertEqual(response.pdu, bytes.fromhex("010100"))
+        self.assertEqual(connections, 2)
+        self.assertEqual(len(received), 2)
+        self.assertEqual(self.metrics.snapshot()["retries"], 1)
+        self.assertEqual(self.metrics.snapshot()["reconnects"], 1)
+
     async def test_client_read_sequences_do_not_interleave(self) -> None:
         upstream_order: list[bytes] = []
 
@@ -290,11 +361,16 @@ class ProxyTests(unittest.IsolatedAsyncioTestCase):
                 while True:
                     request = await read_tcp_adu(reader)
                     upstream_order.append(request.pdu)
+                    response_pdu = (
+                        bytes.fromhex("0302002a")
+                        if request.pdu[0] == 0x03
+                        else bytes.fromhex("0402002b")
+                    )
                     writer.write(
                         encode_tcp_adu(
                             request.transaction_id,
                             request.unit_id,
-                            request.pdu,
+                            response_pdu,
                         )
                     )
                     await writer.drain()
@@ -340,7 +416,7 @@ class ProxyTests(unittest.IsolatedAsyncioTestCase):
 
         writer_a.write(encode_tcp_adu(1, 7, first_a))
         await writer_a.drain()
-        self.assertEqual((await read_tcp_adu(reader_a)).pdu, first_a)
+        self.assertEqual((await read_tcp_adu(reader_a)).pdu, bytes.fromhex("0302002a"))
 
         writer_b.write(encode_tcp_adu(2, 7, first_b))
         await writer_b.drain()
@@ -353,9 +429,12 @@ class ProxyTests(unittest.IsolatedAsyncioTestCase):
 
         writer_a.write(encode_tcp_adu(3, 7, second_a))
         await writer_a.drain()
-        self.assertEqual((await read_tcp_adu(reader_a)).pdu, second_a)
+        self.assertEqual((await read_tcp_adu(reader_a)).pdu, bytes.fromhex("0302002a"))
         self.assertFalse(response_b.done())
-        self.assertEqual((await asyncio.wait_for(response_b, 0.5)).pdu, first_b)
+        self.assertEqual(
+            (await asyncio.wait_for(response_b, 0.5)).pdu,
+            bytes.fromhex("0402002b"),
+        )
         self.assertEqual(upstream_order, [first_a, second_a, first_b])
 
         writer_a.close()
@@ -389,7 +468,13 @@ class ProxyTests(unittest.IsolatedAsyncioTestCase):
         async def delayed_echo(request: ModbusTcpAdu, writer: asyncio.StreamWriter) -> None:
             started.set()
             await release.wait()
-            writer.write(encode_tcp_adu(request.transaction_id, request.unit_id, request.pdu))
+            writer.write(
+                encode_tcp_adu(
+                    request.transaction_id,
+                    request.unit_id,
+                    bytes.fromhex("0302002a"),
+                )
+            )
             await writer.drain()
 
         controller = await self.start_controller(delayed_echo)
@@ -410,6 +495,6 @@ class ProxyTests(unittest.IsolatedAsyncioTestCase):
         active_response = await asyncio.wait_for(active, 1)
         queued_response = await asyncio.wait_for(queued, 1)
 
-        self.assertEqual(active_response.pdu, active_pdu)
+        self.assertEqual(active_response.pdu, bytes.fromhex("0302002a"))
         self.assertEqual(queued_response.pdu, bytes.fromhex("860b"))
         self.assertEqual([request.pdu for request in controller.requests], [active_pdu])

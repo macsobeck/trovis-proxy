@@ -20,6 +20,10 @@ READ_FUNCTIONS = frozenset({0x01, 0x02, 0x03, 0x04})
 WRITE_FUNCTIONS = frozenset({0x05, 0x06, 0x0F, 0x10})
 
 
+class ModbusResponseError(ValueError):
+    """The upstream response cannot belong to the current request."""
+
+
 @dataclass(frozen=True, slots=True)
 class ModbusTcpAdu:
     transaction_id: int
@@ -81,6 +85,63 @@ async def read_tcp_adu(reader: asyncio.StreamReader) -> ModbusTcpAdu:
 def exception_pdu(request_pdu: bytes, exception_code: int) -> bytes:
     function_code = request_pdu[0] if request_pdu else 0
     return bytes((function_code | 0x80, exception_code))
+
+
+def validate_response_pdu(request_pdu: bytes, response_pdu: bytes) -> None:
+    """Validate the protocol fields that correlate a response with its request.
+
+    Read responses do not contain the requested address, so this cannot prove correlation for two
+    identical reads. It does detect the first function or shape mismatch in a shifted stream. The
+    caller must then discard the connection before processing any further response.
+    """
+    if not request_pdu:
+        raise ModbusResponseError("empty Modbus request PDU")
+    if not response_pdu:
+        raise ModbusResponseError("empty Modbus response PDU")
+
+    request_function = request_pdu[0]
+    response_function = response_pdu[0]
+    exception_function = request_function | 0x80
+    if response_function == exception_function:
+        if len(response_pdu) != 2:
+            raise ModbusResponseError("invalid Modbus exception response length")
+        return
+    if response_function != request_function:
+        raise ModbusResponseError(
+            "unexpected Modbus response function "
+            f"0x{response_function:02X}; expected 0x{request_function:02X}"
+        )
+
+    if request_function in READ_FUNCTIONS:
+        if len(request_pdu) < 5:
+            raise ModbusResponseError("malformed Modbus read request")
+        if len(response_pdu) < 2:
+            raise ModbusResponseError("short Modbus read response")
+        quantity = int.from_bytes(request_pdu[3:5], "big")
+        expected_byte_count = (
+            (quantity + 7) // 8 if request_function in {0x01, 0x02} else quantity * 2
+        )
+        byte_count = response_pdu[1]
+        if byte_count != expected_byte_count:
+            raise ModbusResponseError(
+                "unexpected Modbus response byte count "
+                f"{byte_count}; expected {expected_byte_count}"
+            )
+        if len(response_pdu) != byte_count + 2:
+            raise ModbusResponseError("Modbus response length does not match byte count")
+        return
+
+    if request_function in {0x05, 0x06}:
+        if len(request_pdu) < 5 or response_pdu != request_pdu[:5]:
+            raise ModbusResponseError("Modbus single-write response does not echo request")
+        return
+
+    if request_function in {0x0F, 0x10} and (
+        len(request_pdu) < 5
+        or len(response_pdu) != 5
+        or response_pdu[1:5] != request_pdu[1:5]
+    ):
+        raise ModbusResponseError("Modbus multiple-write response does not echo address and count")
 
 
 def crc16(data: bytes) -> int:

@@ -12,12 +12,14 @@ from typing import Any
 from .config import ControllerProfile, TransportType
 from .metrics import GatewayMetrics
 from .protocol import (
+    ModbusResponseError,
     PduKind,
     classify_pdu,
     decode_rtu_adu,
     encode_rtu_adu,
     encode_tcp_adu,
     read_tcp_adu,
+    validate_response_pdu,
 )
 from .tcp import open_tcp_connection
 from .trace import GatewayTrace
@@ -31,11 +33,13 @@ class UpstreamRequestError(RuntimeError):
         sent: bool,
         timed_out: bool = False,
         retryable: bool = True,
+        response_pdu: bytes | None = None,
     ) -> None:
         super().__init__(message)
         self.sent = sent
         self.timed_out = timed_out
         self.retryable = retryable
+        self.response_pdu = response_pdu
 
 
 class UpstreamBackend(ABC):
@@ -92,6 +96,7 @@ class ModbusTcpBackend(UpstreamBackend):
         if self.reader is None or self.writer is None:
             raise UpstreamRequestError("upstream is not connected", sent=False)
         sent = False
+        response_pdu: bytes | None = None
         try:
             self.writer.write(
                 encode_tcp_adu(transaction_id, self.profile.upstream_unit_id, pdu)
@@ -102,14 +107,20 @@ class ModbusTcpBackend(UpstreamBackend):
                 read_tcp_adu(self.reader),
                 self.profile.timing.response_timeout_s,
             )
+            response_pdu = response.pdu
             if response.transaction_id != transaction_id:
-                raise ValueError("upstream transaction ID mismatch")
+                raise ModbusResponseError("upstream transaction ID mismatch")
             if response.unit_id != self.profile.upstream_unit_id:
-                raise ValueError("upstream unit ID mismatch")
-            return response.pdu
+                raise ModbusResponseError("upstream unit ID mismatch")
+            validate_response_pdu(pdu, response_pdu)
+            return response_pdu
         except Exception as exc:
             raise UpstreamRequestError(
-                str(exc), sent=sent, timed_out=_timeout(exc), retryable=_transport_failure(exc)
+                str(exc),
+                sent=sent,
+                timed_out=_timeout(exc),
+                retryable=_transport_failure(exc),
+                response_pdu=response_pdu,
             ) from exc
 
 
@@ -150,19 +161,28 @@ class RtuOverTcpBackend(UpstreamBackend):
         if self.reader is None or self.writer is None:
             raise UpstreamRequestError("upstream is not connected", sent=False)
         sent = False
+        response_pdu: bytes | None = None
         try:
             self.writer.write(encode_rtu_adu(self.profile.upstream_unit_id, pdu))
             sent = True
             await self.writer.drain()
             frame = await _read_rtu_response(
                 self.reader,
-                pdu[0],
                 self.profile.timing.response_timeout_s,
             )
-            return decode_rtu_adu(frame, self.profile.upstream_unit_id)
+            try:
+                response_pdu = decode_rtu_adu(frame, self.profile.upstream_unit_id)
+            except ValueError as exc:
+                raise ModbusResponseError(str(exc)) from exc
+            validate_response_pdu(pdu, response_pdu)
+            return response_pdu
         except Exception as exc:
             raise UpstreamRequestError(
-                str(exc), sent=sent, timed_out=_timeout(exc), retryable=_transport_failure(exc)
+                str(exc),
+                sent=sent,
+                timed_out=_timeout(exc),
+                retryable=_transport_failure(exc),
+                response_pdu=response_pdu,
             ) from exc
 
 
@@ -219,6 +239,7 @@ class SerialRtuBackend(UpstreamBackend):
         if self.port is None:
             raise UpstreamRequestError("upstream is not connected", sent=False)
         sent = False
+        response_pdu: bytes | None = None
 
         def transact() -> bytes:
             nonlocal sent
@@ -226,14 +247,23 @@ class SerialRtuBackend(UpstreamBackend):
             sent = True
             self.port.write(encode_rtu_adu(self.profile.upstream_unit_id, pdu))
             self.port.flush()
-            return _read_rtu_serial(self.port, pdu[0])
+            return _read_rtu_serial(self.port)
 
         try:
             frame = await asyncio.to_thread(transact)
-            return decode_rtu_adu(frame, self.profile.upstream_unit_id)
+            try:
+                response_pdu = decode_rtu_adu(frame, self.profile.upstream_unit_id)
+            except ValueError as exc:
+                raise ModbusResponseError(str(exc)) from exc
+            validate_response_pdu(pdu, response_pdu)
+            return response_pdu
         except Exception as exc:
             raise UpstreamRequestError(
-                str(exc), sent=sent, timed_out=_timeout(exc), retryable=_transport_failure(exc)
+                str(exc),
+                sent=sent,
+                timed_out=_timeout(exc),
+                retryable=_transport_failure(exc),
+                response_pdu=response_pdu,
             ) from exc
 
 
@@ -244,16 +274,20 @@ def _timeout(error: BaseException) -> bool:
 def _transport_failure(error: BaseException) -> bool:
     return isinstance(
         error,
-        (TimeoutError, asyncio.IncompleteReadError, ConnectionError, OSError),
+        (
+            ModbusResponseError,
+            TimeoutError,
+            asyncio.IncompleteReadError,
+            ConnectionError,
+            OSError,
+        ),
     )
 
 
 async def _read_rtu_response(
     reader: asyncio.StreamReader,
-    request_function: int,
     timeout: float,
 ) -> bytes:
-    del request_function
     prefix = await asyncio.wait_for(reader.readexactly(2), timeout)
     response_function = prefix[1]
     if response_function & 0x80:
@@ -278,8 +312,7 @@ async def _read_rtu_response(
     return b"".join(chunks)
 
 
-def _read_rtu_serial(port: Any, request_function: int) -> bytes:
-    del request_function
+def _read_rtu_serial(port: Any) -> bytes:
     prefix = port.read(2)
     if len(prefix) != 2:
         raise TimeoutError("serial response timeout")
@@ -533,7 +566,7 @@ class UpstreamRouter:
                     transaction_id=transaction_id,
                     downstream_unit_id=downstream_unit_id,
                     upstream_unit_id=profile.upstream_unit_id,
-                    pdu=pdu,
+                    pdu=exc.response_pdu if exc.response_pdu is not None else pdu,
                     retry=attempt,
                     exception=exc,
                 )

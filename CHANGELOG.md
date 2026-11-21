@@ -7,6 +7,12 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Fixed
+
+- Reject upstream responses whose function code, byte count, or write echo cannot belong to the
+  current request. A mismatch now closes the connection and discards queued frames before a safe
+  read retry, preventing shifted RTU-over-TCP responses from being assigned to later requests.
+
 ## [1.2.0] - 2026-11-21
 
 ### Added
