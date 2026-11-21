@@ -75,7 +75,7 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(profile["timing"]["client_burst_idle_s"], 0.25)
         _, status_body = await self.fetch("/api/status")
         self.assertNotIn("secret-value", status_body)
-        self.assertEqual(json.loads(status_body)["version"], "1.1.1")
+        self.assertEqual(json.loads(status_body)["version"], "1.2.0")
 
     async def test_forwarding_state_can_be_changed_and_is_reported(self) -> None:
         status, body = await self.fetch(
@@ -110,7 +110,7 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('<h2>Modbus Proxy</h2>', html)
         self.assertNotIn('<h2>Gateway</h2>', html)
         self.assertIn("Design by macsobeck", html)
-        self.assertIn('<span id="release-version">Release 1.1.1</span>', html)
+        self.assertIn('<span id="release-version">Release 1.2.0</span>', html)
         self.assertIn("TROVIS-VIEW Listener", html)
         self.assertIn('class="parameter-row"', html)
         self.assertIn('class="parameter-label"', html)

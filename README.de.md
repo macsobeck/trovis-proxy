@@ -194,7 +194,8 @@ Wählen Sie die [deutsche Schritt-für-Schritt-Anleitung](docs/gateway/installat
 Weitere Informationen finden Sie in der englischen Dokumentation zu
 [Modbus-Proxy-Architektur](docs/gateway/architecture.md),
 [Konfiguration](docs/gateway/configuration.md) und
-[Protokollsicherheit](docs/gateway/protocol-safety.md).
+[Protokollsicherheit](docs/gateway/protocol-safety.md). Release-Änderungen sind im
+[Changelog](CHANGELOG.md) dokumentiert.
 
 ## Häufig gestellte Fragen
 

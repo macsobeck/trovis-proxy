@@ -179,7 +179,8 @@ Choose the [English installation guide](docs/gateway/installation.md) or the
 
 See [Modbus Proxy architecture](docs/gateway/architecture.md),
 [configuration](docs/gateway/configuration.md), and
-[protocol safety](docs/gateway/protocol-safety.md).
+[protocol safety](docs/gateway/protocol-safety.md). Release changes are recorded in the
+[changelog](CHANGELOG.md).
 
 ## Frequently asked questions
 

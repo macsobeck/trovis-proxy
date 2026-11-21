@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-ARG IMAGE_VERSION=1.1.1
+ARG IMAGE_VERSION=1.2.0
 
 LABEL org.opencontainers.image.title="TROVIS Modbus Proxy" \
       org.opencontainers.image.description="Multi-client Modbus Proxy for TROVIS-VIEW, TROVIS 55 Pro, Node-RED, and SAMSON heating controllers" \
