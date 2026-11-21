@@ -104,6 +104,9 @@ class GatewayConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     schema_version: str = "1.0"
+    forwarding_enabled: bool = True
+    disabled_request_policy: Literal["reject", "buffer_all"] = "reject"
+    buffer_retention_s: float = Field(default=300.0, ge=1, le=3600)
     active_profile_id: str | None = None
     profiles: list[ControllerProfile] = Field(default_factory=list)
 

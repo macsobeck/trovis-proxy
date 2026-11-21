@@ -11,6 +11,36 @@ from trovis_gateway.store import ConfigStore
 
 
 class ConfigStoreTests(unittest.TestCase):
+    def test_forwarding_state_is_persisted_across_profile_updates(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.json"
+            store = ConfigStore(path)
+
+            self.assertEqual(store.forwarding_state(), (True, "reject", 300.0))
+            store.set_forwarding_state(
+                enabled=False,
+                policy="buffer_all",
+                buffer_retention_s=600,
+            )
+            store.upsert_profile(
+                {
+                    "name": "Plant A",
+                    "transport": "modbus_tcp",
+                    "host": "127.0.0.1",
+                }
+            )
+
+            reloaded = ConfigStore(path)
+            reloaded.load()
+            self.assertEqual(
+                reloaded.forwarding_state(),
+                (False, "buffer_all", 600.0),
+            )
+            public = reloaded.public_document()
+            self.assertFalse(public["forwarding_enabled"])
+            self.assertEqual(public["disabled_request_policy"], "buffer_all")
+            self.assertEqual(public["buffer_retention_s"], 600)
+
     def test_secret_is_persisted_but_redacted_from_public_document(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "config.json"

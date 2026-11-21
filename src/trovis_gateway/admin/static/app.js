@@ -3,8 +3,24 @@ const defaults = {
   retry: { read_retries: 2, write_retries: 0 },
   serial: { device: "", baudrate: 19200, data_bits: 8, parity: "N", stop_bits: 1 }
 };
-let config = { active_profile_id: null, profiles: [] };
+const timingFields = {
+  connect_timeout_s: "connect-timeout",
+  response_timeout_s: "response-timeout",
+  total_request_timeout_s: "total-timeout",
+  minimum_request_interval_s: "minimum-interval",
+  client_burst_idle_s: "client-burst-idle",
+  connect_settle_delay_s: "settle-delay",
+  reconnect_delay_s: "reconnect-delay",
+  max_connection_age_s: "max-connection-age"
+};
+const timingPresets = {
+  fast: { connect_timeout_s: 2, response_timeout_s: 1, total_request_timeout_s: 5, minimum_request_interval_s: .05, client_burst_idle_s: .1, connect_settle_delay_s: .1, reconnect_delay_s: .5, max_connection_age_s: 25 },
+  standard: { ...defaults.timing },
+  reliable: { connect_timeout_s: 5, response_timeout_s: 4, total_request_timeout_s: 20, minimum_request_interval_s: .2, client_burst_idle_s: 1, connect_settle_delay_s: .5, reconnect_delay_s: 2, max_connection_age_s: 25 }
+};
+let config = { forwarding_enabled: true, disabled_request_policy: "reject", buffer_retention_s: 300, active_profile_id: null, profiles: [] };
 let selectedId = null;
+let forwardingRequestInFlight = false;
 const $ = id => document.getElementById(id);
 
 async function api(path, options = {}) {
@@ -46,6 +62,21 @@ function escapeHtml(value) { const div = document.createElement("div"); div.text
 function target(profile) { return profile.transport === "serial_rtu" ? profile.serial.device : `${profile.host}:${profile.port}`; }
 function number(id) { return Number($(id).value); }
 
+function applyTimingPreset(name) {
+  const preset = timingPresets[name];
+  if (!preset) return;
+  Object.entries(timingFields).forEach(([key, id]) => { $(id).value = preset[key]; });
+}
+
+function detectedTimingPreset() {
+  for (const [name, preset] of Object.entries(timingPresets)) {
+    if (Object.entries(timingFields).every(([key, id]) => Math.abs(number(id) - preset[key]) < 1e-9)) return name;
+  }
+  return "custom";
+}
+
+function syncTimingPreset() { $("timing-preset").value = detectedTimingPreset(); }
+
 function selectProfile(id) {
   selectedId = id;
   const profile = config.profiles.find(item => item.id === id);
@@ -73,6 +104,7 @@ function selectProfile(id) {
   $("settle-delay").value = profile.timing.connect_settle_delay_s;
   $("reconnect-delay").value = profile.timing.reconnect_delay_s;
   $("max-connection-age").value = profile.timing.max_connection_age_s ?? defaults.timing.max_connection_age_s;
+  syncTimingPreset();
   $("read-retries").value = profile.retry.read_retries;
   $("write-retries").value = profile.retry.write_retries;
   $("delete-profile").classList.remove("hidden");
@@ -88,6 +120,7 @@ function newProfile() {
   $("baudrate").value = defaults.serial.baudrate; $("data-bits").value = 8; $("parity").value = "N"; $("stop-bits").value = 1;
   $("connect-timeout").value = defaults.timing.connect_timeout_s; $("response-timeout").value = defaults.timing.response_timeout_s; $("total-timeout").value = defaults.timing.total_request_timeout_s;
   $("minimum-interval").value = defaults.timing.minimum_request_interval_s; $("client-burst-idle").value = defaults.timing.client_burst_idle_s; $("settle-delay").value = defaults.timing.connect_settle_delay_s; $("reconnect-delay").value = defaults.timing.reconnect_delay_s; $("max-connection-age").value = defaults.timing.max_connection_age_s;
+  $("timing-preset").value = "standard";
   $("read-retries").value = defaults.retry.read_retries; $("write-retries").value = defaults.retry.write_retries;
   $("key-state").textContent = "Not configured";
   $("delete-profile").classList.add("hidden"); $("activate-profile").classList.add("hidden");
@@ -135,16 +168,49 @@ async function refreshStatus() {
   try {
     const status = await api("/api/status"), metrics = status.metrics, active = status.active_profile;
     $("release-version").textContent = `Release ${status.version}`;
-    $("health-dot").classList.add("ok"); $("health-label").textContent = "Modbus Proxy ready";
+    $("health-dot").classList.toggle("ok", status.forwarding_enabled); $("health-dot").classList.toggle("paused", !status.forwarding_enabled); $("health-label").textContent = status.forwarding_enabled ? "Modbus Proxy ready" : "Forwarding paused";
+    if (!forwardingRequestInFlight) {
+      $("forwarding-toggle").checked = status.forwarding_enabled;
+      $("disabled-request-policy").value = status.disabled_request_policy;
+      $("buffer-retention").value = status.buffer_retention_s;
+      updateForwardingControls();
+    }
+    $("proxy-badge").textContent = status.forwarding_enabled ? "Ready" : "Paused"; $("proxy-badge").classList.toggle("status-indicator-ok", status.forwarding_enabled); $("proxy-badge").classList.toggle("status-indicator-paused", !status.forwarding_enabled);
     $("listener").textContent = `${status.listener.address}:${status.listener.port}`;
     $("requests").textContent = metrics.requests; $("clients").textContent = metrics.downstream_clients; $("queue").textContent = metrics.queue_depth; $("retries").textContent = metrics.retries; $("timeouts").textContent = metrics.timeouts; $("reconnects").textContent = metrics.reconnects;
     $("active-profile-name").textContent = active ? active.name : "No active profile"; $("active-profile-target").textContent = active ? `${target(active)} · Unit ${active.upstream_unit_id}` : "Create a profile under Controller connection.";
     $("upstream-badge").textContent = metrics.upstream_connected ? "Connected" : "Disconnected"; $("upstream-badge").classList.toggle("ok", metrics.upstream_connected);
-  } catch (_) { $("health-dot").classList.remove("ok"); $("health-label").textContent = "Modbus Proxy unavailable"; }
+  } catch (_) { $("health-dot").classList.remove("ok", "paused"); $("health-label").textContent = "Modbus Proxy unavailable"; }
+}
+
+function updateForwardingControls() {
+  const enabled = $("forwarding-toggle").checked;
+  $("forwarding-label").textContent = enabled ? "On" : "Off";
+  $("buffer-retention-row").classList.toggle("hidden", $("disabled-request-policy").value !== "buffer_all");
+}
+
+async function saveForwardingState() {
+  forwardingRequestInFlight = true;
+  updateForwardingControls();
+  $("forwarding-message").textContent = "Saving …";
+  $("forwarding-message").classList.remove("error");
+  try {
+    await api("/api/forwarding", { method: "POST", body: JSON.stringify({ enabled: $("forwarding-toggle").checked, disabled_request_policy: $("disabled-request-policy").value, buffer_retention_s: number("buffer-retention") }) });
+    $("forwarding-message").textContent = $("forwarding-toggle").checked ? "Forwarding is active." : "Forwarding is paused.";
+  } catch (error) {
+    $("forwarding-message").textContent = error.message;
+    $("forwarding-message").classList.add("error");
+  } finally {
+    forwardingRequestInFlight = false;
+    await refreshStatus();
+  }
 }
 
 document.querySelectorAll(".nav-button").forEach(button => button.addEventListener("click", () => showView(button.dataset.view)));
 $("refresh-status").addEventListener("click", refreshStatus); $("new-profile").addEventListener("click", newProfile); $("profile-form").addEventListener("submit", saveProfile);
 $("transport").addEventListener("change", transportChanged); $("test-profile").addEventListener("click", testProfile); $("activate-profile").addEventListener("click", activateProfile); $("delete-profile").addEventListener("click", deleteProfile);
+$("forwarding-toggle").addEventListener("change", saveForwardingState); $("disabled-request-policy").addEventListener("change", saveForwardingState); $("buffer-retention").addEventListener("change", saveForwardingState);
+$("timing-preset").addEventListener("change", event => applyTimingPreset(event.target.value));
+Object.values(timingFields).forEach(id => $(id).addEventListener("input", () => { $("timing-preset").value = "custom"; }));
 $("toggle-key").addEventListener("click", () => { const input=$("access-key"), visible=input.type === "text"; input.type=visible?"password":"text"; $("toggle-key").textContent=visible?"Show":"Hide"; });
 loadConfig().catch(() => {}); refreshStatus(); setInterval(() => { if (!$("status-view").classList.contains("hidden")) refreshStatus(); }, 5000);

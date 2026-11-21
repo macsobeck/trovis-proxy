@@ -77,6 +77,27 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("secret-value", status_body)
         self.assertEqual(json.loads(status_body)["version"], "1.1.1")
 
+    async def test_forwarding_state_can_be_changed_and_is_reported(self) -> None:
+        status, body = await self.fetch(
+            "/api/forwarding",
+            {
+                "enabled": False,
+                "disabled_request_policy": "buffer_all",
+                "buffer_retention_s": 420,
+            },
+        )
+        self.assertEqual(status, 200)
+        self.assertFalse(json.loads(body)["forwarding_enabled"])
+
+        _, status_body = await self.fetch("/api/status")
+        state = json.loads(status_body)
+        self.assertFalse(state["forwarding_enabled"])
+        self.assertEqual(state["disabled_request_policy"], "buffer_all")
+        self.assertEqual(state["buffer_retention_s"], 420)
+
+        _, config_body = await self.fetch("/api/config")
+        self.assertFalse(json.loads(config_body)["forwarding_enabled"])
+
     async def test_ui_has_controller_editor_but_no_downstream_editor(self) -> None:
         _, html = await self.fetch("/")
         self.assertIn('<html lang="en">', html)
@@ -98,6 +119,14 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn('id="fc01-address-offset"', html)
         self.assertIn('id="max-connection-age"', html)
         self.assertIn('id="client-burst-idle"', html)
+        self.assertIn('id="forwarding-toggle"', html)
+        self.assertIn('id="disabled-request-policy"', html)
+        self.assertIn('id="buffer-retention"', html)
+        self.assertIn('id="timing-preset"', html)
+        self.assertIn('<option value="fast">Fast</option>', html)
+        self.assertIn('<option value="standard">Standard (recommended)</option>', html)
+        self.assertIn('<option value="reliable">Reliable</option>', html)
+        self.assertIn('<option value="custom">Custom</option>', html)
         self.assertNotIn("<details", html)
         self.assertNotIn('id="listen-port"', html)
         self.assertNotIn('id="downstream-unit-id"', html)

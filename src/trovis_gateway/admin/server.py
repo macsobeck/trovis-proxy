@@ -84,10 +84,16 @@ class AdminHandler(BaseHTTPRequestHandler):
             return
         if path == "/api/status":
             active = self.admin.store.active_profile()
+            forwarding_enabled, disabled_request_policy, buffer_retention_s = (
+                self.admin.store.forwarding_state()
+            )
             self._json(
                 HTTPStatus.OK,
                 {
                     "version": __version__,
+                    "forwarding_enabled": forwarding_enabled,
+                    "disabled_request_policy": disabled_request_policy,
+                    "buffer_retention_s": buffer_retention_s,
                     "listener": {
                         "address": self.admin.settings.listen_host,
                         "port": self.admin.settings.listen_port,
@@ -106,6 +112,33 @@ class AdminHandler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         try:
             payload = self._read_json()
+            if path == "/api/forwarding":
+                enabled = payload.get("enabled")
+                policy = payload.get("disabled_request_policy")
+                buffer_retention_s = payload.get("buffer_retention_s")
+                if not isinstance(enabled, bool):
+                    raise ValueError("enabled must be a boolean")
+                if policy not in {"reject", "buffer_all"}:
+                    raise ValueError("invalid disabled request policy")
+                if isinstance(buffer_retention_s, bool) or not isinstance(
+                    buffer_retention_s,
+                    (int, float),
+                ):
+                    raise ValueError("buffer retention must be a number")
+                self.admin.store.set_forwarding_state(
+                    enabled=enabled,
+                    policy=policy,
+                    buffer_retention_s=float(buffer_retention_s),
+                )
+                self._json(
+                    HTTPStatus.OK,
+                    {
+                        "forwarding_enabled": enabled,
+                        "disabled_request_policy": policy,
+                        "buffer_retention_s": float(buffer_retention_s),
+                    },
+                )
+                return
             if path == "/api/profiles":
                 profile = self.admin.store.upsert_profile(payload)
                 self._json(HTTPStatus.CREATED, public_profile(profile))

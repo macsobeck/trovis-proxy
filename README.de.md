@@ -85,6 +85,12 @@ weiteren Stärken entwickelt:
 - **Zuverlässiges Verbindungsmanagement:** Einstellbare Anfrageabstände, Zeitüberschreitungen,
   sichere Wiederholungen von Lesezugriffen und proaktive Neuverbindungen stabilisieren die
   Kommunikation mit Reglern und Ethernet-Adaptern.
+- **Kontrollierte Wartungspausen:** Die Weiterleitung kann angehalten werden, ohne den Dienst zu
+  stoppen. Neue Anfragen werden entweder sofort abgewiesen oder vollständig für einstellbare
+  1–3600 Sekunden gepuffert. Gepufferte Schreibanfragen werden nach dem Fortsetzen ausgeführt,
+  selbst wenn ihr Client bereits einen Timeout gemeldet hat.
+- **Praktische Timing-Profile:** Schnell, Standard und Zuverlässig decken typische Betriebsfälle
+  ab; mit Benutzerdefiniert bleiben alle Timingwerte einzeln einstellbar.
 - **Geschützte Schreibvorgänge:** Schreibvorgänge werden nach einem uneindeutigen Ergebnis niemals
   wiederholt. Dadurch sinkt das Risiko unbeabsichtigter Konfigurationsänderungen.
 - **Einfacher selbst gehosteter Betrieb:** Docker Compose, dauerhafte Konfiguration und eine

@@ -70,9 +70,39 @@ class ConfigStore:
         with self._lock:
             return {
                 "schema_version": self._config.schema_version,
+                "forwarding_enabled": self._config.forwarding_enabled,
+                "disabled_request_policy": self._config.disabled_request_policy,
+                "buffer_retention_s": self._config.buffer_retention_s,
                 "active_profile_id": self._config.active_profile_id,
                 "profiles": [public_profile(profile) for profile in self._config.profiles],
             }
+
+    def forwarding_state(self) -> tuple[bool, str, float]:
+        with self._lock:
+            return (
+                self._config.forwarding_enabled,
+                self._config.disabled_request_policy,
+                self._config.buffer_retention_s,
+            )
+
+    def set_forwarding_state(
+        self,
+        *,
+        enabled: bool,
+        policy: str,
+        buffer_retention_s: float,
+    ) -> None:
+        with self._lock:
+            candidate = GatewayConfig.model_validate(
+                {
+                    **self._config.model_dump(),
+                    "forwarding_enabled": enabled,
+                    "disabled_request_policy": policy,
+                    "buffer_retention_s": buffer_retention_s,
+                }
+            )
+            self._config = candidate
+            self._save_locked()
 
     def active_profile(self) -> ControllerProfile | None:
         with self._lock:
@@ -110,6 +140,9 @@ class ConfigStore:
                 active_id = profile.id
             self._config = GatewayConfig(
                 schema_version=self._config.schema_version,
+                forwarding_enabled=self._config.forwarding_enabled,
+                disabled_request_policy=self._config.disabled_request_policy,
+                buffer_retention_s=self._config.buffer_retention_s,
                 active_profile_id=active_id,
                 profiles=profiles,
             )
@@ -126,6 +159,9 @@ class ConfigStore:
                 active_id = profiles[0].id if profiles else None
             self._config = GatewayConfig(
                 schema_version=self._config.schema_version,
+                forwarding_enabled=self._config.forwarding_enabled,
+                disabled_request_policy=self._config.disabled_request_policy,
+                buffer_retention_s=self._config.buffer_retention_s,
                 active_profile_id=active_id,
                 profiles=profiles,
             )
@@ -142,6 +178,9 @@ class ConfigStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
             "schema_version": self._config.schema_version,
+            "forwarding_enabled": self._config.forwarding_enabled,
+            "disabled_request_policy": self._config.disabled_request_policy,
+            "buffer_retention_s": self._config.buffer_retention_s,
             "active_profile_id": self._config.active_profile_id,
             "profiles": [_profile_storage(profile) for profile in self._config.profiles],
         }

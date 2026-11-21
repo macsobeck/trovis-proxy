@@ -367,3 +367,109 @@ class ProxyTests(unittest.IsolatedAsyncioTestCase):
         await self.proxy.start()
         response = await self.request(bytes.fromhex("0300000001"))
         self.assertEqual(response.pdu, bytes.fromhex("830b"))
+
+    async def test_paused_proxy_rejects_requests_without_forwarding(self) -> None:
+        async def echo(request: ModbusTcpAdu, writer: asyncio.StreamWriter) -> None:
+            writer.write(encode_tcp_adu(request.transaction_id, request.unit_id, request.pdu))
+            await writer.drain()
+
+        controller = await self.start_controller(echo)
+        await self.configure(controller)
+        self.store.set_forwarding_state(
+            enabled=False,
+            policy="reject",
+            buffer_retention_s=300,
+        )
+
+        response = await self.request(bytes.fromhex("0300000001"))
+
+        self.assertEqual(response.pdu, bytes.fromhex("830b"))
+        self.assertEqual(controller.requests, [])
+
+    async def test_buffered_read_is_forwarded_after_resume(self) -> None:
+        async def echo(request: ModbusTcpAdu, writer: asyncio.StreamWriter) -> None:
+            writer.write(encode_tcp_adu(request.transaction_id, request.unit_id, request.pdu))
+            await writer.drain()
+
+        controller = await self.start_controller(echo)
+        await self.configure(controller)
+        self.store.set_forwarding_state(
+            enabled=False,
+            policy="buffer_all",
+            buffer_retention_s=300,
+        )
+        pending = asyncio.create_task(self.request(bytes.fromhex("0300000001")))
+        for _ in range(50):
+            if self.metrics.snapshot()["queue_depth"] == 1:
+                break
+            await asyncio.sleep(0.002)
+
+        self.assertEqual(controller.requests, [])
+        self.store.set_forwarding_state(
+            enabled=True,
+            policy="buffer_all",
+            buffer_retention_s=300,
+        )
+        response = await asyncio.wait_for(pending, 1)
+
+        self.assertEqual(response.pdu, bytes.fromhex("0300000001"))
+        self.assertEqual(len(controller.requests), 1)
+
+    async def test_buffered_write_is_forwarded_after_resume(self) -> None:
+        async def echo(request: ModbusTcpAdu, writer: asyncio.StreamWriter) -> None:
+            writer.write(encode_tcp_adu(request.transaction_id, request.unit_id, request.pdu))
+            await writer.drain()
+
+        controller = await self.start_controller(echo)
+        await self.configure(controller)
+        self.store.set_forwarding_state(
+            enabled=False,
+            policy="buffer_all",
+            buffer_retention_s=300,
+        )
+        pending = asyncio.create_task(self.request(bytes.fromhex("0600010001")))
+        for _ in range(50):
+            if self.metrics.snapshot()["queue_depth"] == 1:
+                break
+            await asyncio.sleep(0.002)
+
+        self.assertEqual(controller.requests, [])
+        self.store.set_forwarding_state(
+            enabled=True,
+            policy="buffer_all",
+            buffer_retention_s=300,
+        )
+        response = await asyncio.wait_for(pending, 1)
+
+        self.assertEqual(response.pdu, bytes.fromhex("0600010001"))
+        self.assertEqual(len(controller.requests), 1)
+
+    async def test_unknown_function_is_buffered_until_resume(self) -> None:
+        async def echo(request: ModbusTcpAdu, writer: asyncio.StreamWriter) -> None:
+            writer.write(encode_tcp_adu(request.transaction_id, request.unit_id, request.pdu))
+            await writer.drain()
+
+        controller = await self.start_controller(echo)
+        await self.configure(controller)
+        self.store.set_forwarding_state(
+            enabled=False,
+            policy="buffer_all",
+            buffer_retention_s=300,
+        )
+        pdu = bytes.fromhex("41deadbeef")
+        pending = asyncio.create_task(self.request(pdu))
+        for _ in range(50):
+            if self.metrics.snapshot()["queue_depth"] == 1:
+                break
+            await asyncio.sleep(0.002)
+
+        self.assertEqual(controller.requests, [])
+        self.store.set_forwarding_state(
+            enabled=True,
+            policy="buffer_all",
+            buffer_retention_s=300,
+        )
+        response = await asyncio.wait_for(pending, 1)
+
+        self.assertEqual(response.pdu, pdu)
+        self.assertEqual(len(controller.requests), 1)

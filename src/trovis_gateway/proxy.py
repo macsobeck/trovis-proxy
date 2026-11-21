@@ -86,6 +86,7 @@ class ModbusProxy:
                             downstream_unit_id=request.unit_id,
                             pdu=request.pdu,
                             profile=profile,
+                            forwarding_state=self.store.forwarding_state,
                         )
                     except UpstreamRequestError:
                         response_pdu = exception_pdu(request.pdu, 0x0B)

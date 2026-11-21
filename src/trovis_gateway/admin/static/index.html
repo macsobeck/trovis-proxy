@@ -27,11 +27,33 @@
         <button class="secondary" id="refresh-status">Refresh</button>
       </div>
 
+      <section class="card parameter-cluster forwarding-control">
+        <header class="cluster-heading">
+          <div><p class="cluster-kicker">Operation</p><h2>Forwarding control</h2><p>Temporarily pause controller forwarding without stopping the Modbus Proxy.</p></div>
+          <label class="switch" for="forwarding-toggle">
+            <input id="forwarding-toggle" type="checkbox" role="switch">
+            <span class="switch-track" aria-hidden="true"><span></span></span>
+            <strong id="forwarding-label">On</strong>
+          </label>
+        </header>
+        <div class="parameter-list">
+          <div class="parameter-row">
+            <label class="parameter-label" for="disabled-request-policy">When paused</label>
+            <div class="parameter-value"><select id="disabled-request-policy"><option value="reject">Without buffering</option><option value="buffer_all">Buffer all requests</option></select><small>Buffered writes are forwarded after resuming, even if their client has already timed out.</small></div>
+          </div>
+          <div class="parameter-row hidden" id="buffer-retention-row">
+            <label class="parameter-label" for="buffer-retention">Buffer retention</label>
+            <div class="parameter-value input-with-unit"><input id="buffer-retention" type="number" min="1" max="3600" step="1" value="300"><span>s</span><small>Range: 1–3600 s; default: 300 s. Expired requests are discarded and are not forwarded later.</small></div>
+          </div>
+          <div id="forwarding-message" class="forwarding-message" role="status" aria-live="polite"></div>
+        </div>
+      </section>
+
       <div class="status-columns">
         <article class="card parameter-cluster status-cluster">
           <header class="cluster-heading">
             <div><p class="cluster-kicker">Downstream</p><h2>Modbus Proxy</h2></div>
-            <span class="status-indicator status-indicator-ok">Ready</span>
+            <span class="status-indicator status-indicator-ok" id="proxy-badge">Ready</span>
           </header>
           <div class="parameter-list status-list">
             <div class="parameter-row"><span class="parameter-label">TROVIS-VIEW Listener</span><strong class="parameter-output" id="listener">—</strong></div>
@@ -157,6 +179,10 @@
               <div><p class="cluster-kicker">Communication</p><h2>Timing</h2><p>Timeouts, minimum intervals, and delays for the controller connection.</p></div>
             </header>
             <div class="parameter-list">
+              <div class="parameter-row">
+                <label class="parameter-label" for="timing-preset">Timing preset</label>
+                <div class="parameter-value"><select id="timing-preset"><option value="fast">Fast</option><option value="standard">Standard (recommended)</option><option value="reliable">Reliable</option><option value="custom">Custom</option></select><small>Selecting a preset fills all timing values below. Manual changes select Custom.</small></div>
+              </div>
               <div class="parameter-row"><label class="parameter-label" for="connect-timeout">Connection timeout</label><div class="parameter-value input-with-unit"><input id="connect-timeout" type="number" min="0.1" max="120" step="0.1"><span>s</span></div></div>
               <div class="parameter-row"><label class="parameter-label" for="response-timeout">Response timeout</label><div class="parameter-value input-with-unit"><input id="response-timeout" type="number" min="0.1" max="120" step="0.1"><span>s</span></div></div>
               <div class="parameter-row"><label class="parameter-label" for="total-timeout">Total timeout</label><div class="parameter-value input-with-unit"><input id="total-timeout" type="number" min="0.1" max="300" step="0.1"><span>s</span></div></div>

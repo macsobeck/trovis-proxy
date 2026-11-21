@@ -77,6 +77,11 @@ strengths:
   RTU-over-TCP, or Serial RTU.
 - **Reliable connection management:** Configurable pacing, timeouts, safe read retries, and
   proactive reconnection help stabilize communication with controllers and Ethernet adapters.
+- **Controlled maintenance pauses:** Forwarding can be paused without stopping the service. New
+  requests can either be rejected immediately or all requests can be buffered for a configurable
+  1–3600 seconds. Buffered writes execute after resuming, even if their client has timed out.
+- **Practical timing presets:** Fast, Standard, and Reliable presets cover common operating
+  conditions, while Custom keeps every timing value individually adjustable.
 - **Protected write operations:** Writes are never repeated after an ambiguous result, reducing
   the risk of unintended configuration changes.
 - **Simple self-hosted operation:** Docker Compose deployment, persistent configuration, and a
