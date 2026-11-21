@@ -16,12 +16,8 @@ class ConfigStoreTests(unittest.TestCase):
             path = Path(directory) / "config.json"
             store = ConfigStore(path)
 
-            self.assertEqual(store.forwarding_state(), (True, "reject", 300.0))
-            store.set_forwarding_state(
-                enabled=False,
-                policy="buffer_all",
-                buffer_retention_s=600,
-            )
+            self.assertTrue(store.forwarding_enabled())
+            store.set_forwarding_enabled(False)
             store.upsert_profile(
                 {
                     "name": "Plant A",
@@ -32,14 +28,11 @@ class ConfigStoreTests(unittest.TestCase):
 
             reloaded = ConfigStore(path)
             reloaded.load()
-            self.assertEqual(
-                reloaded.forwarding_state(),
-                (False, "buffer_all", 600.0),
-            )
+            self.assertFalse(reloaded.forwarding_enabled())
             public = reloaded.public_document()
             self.assertFalse(public["forwarding_enabled"])
-            self.assertEqual(public["disabled_request_policy"], "buffer_all")
-            self.assertEqual(public["buffer_retention_s"], 600)
+            self.assertNotIn("disabled_request_policy", public)
+            self.assertNotIn("buffer_retention_s", public)
 
     def test_secret_is_persisted_but_redacted_from_public_document(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -90,6 +83,9 @@ class ConfigStoreTests(unittest.TestCase):
                 json.dumps(
                     {
                         "schema_version": "1.0",
+                        "forwarding_enabled": False,
+                        "disabled_request_policy": "buffer_all",
+                        "buffer_retention_s": 600,
                         "active_profile_id": "legacy",
                         "profiles": [
                             {
@@ -117,6 +113,10 @@ class ConfigStoreTests(unittest.TestCase):
             self.assertNotIn("compatibility", ControllerProfile.model_fields)
             self.assertNotIn("compatibility", public)
             self.assertNotIn("compatibility", persisted)
+            persisted_document = json.loads(path.read_text(encoding="utf-8"))
+            self.assertNotIn("disabled_request_policy", persisted_document)
+            self.assertNotIn("buffer_retention_s", persisted_document)
+            self.assertFalse(store.forwarding_enabled())
 
             store.upsert_profile(
                 {

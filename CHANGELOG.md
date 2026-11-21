@@ -12,14 +12,14 @@ semantic versioning.
 ### Added
 
 - Persistent forwarding control in the administration interface.
-- Two pause modes: reject requests immediately or buffer all requests until forwarding resumes.
-- Configurable buffer retention from 1 to 3600 seconds, with a 300-second default.
 - Fast, Standard, Reliable, and Custom timing selections for controller profiles.
 - Automatic Custom selection after a manual timing change and preset recognition when loading a
   profile.
-- Status and configuration API fields for the forwarding state, pause mode, and retention time.
-- Automated coverage for immediate rejection, buffered reads and writes, unknown function codes,
-  persistence, and administration controls.
+- Explicit DNS-name resolution before TCP connection establishment, including the resolved address
+  in connection-test results and documented IPv6-to-IPv4 fallback behavior.
+- Status and configuration API fields for the persistent forwarding state.
+- Automated coverage for immediate and queued-request rejection, persistence, and administration
+  controls.
 
 ### Changed
 
@@ -28,11 +28,9 @@ semantic versioning.
 
 ### Safety
 
-- Without buffering, paused requests are rejected with Modbus gateway exception `0x0B` and are not
-  sent to the controller.
-- With buffering, reads, writes, and unknown or vendor-specific function codes remain blocked while
-  paused and are forwarded after resuming. A buffered write may still execute after its client has
-  timed out; expired requests are discarded.
+- Active requests finish safely when forwarding is paused. New and already queued requests receive
+  Modbus gateway exception `0x0B` and are not sent to the controller.
+- Paused requests are not stored or executed after forwarding resumes, preventing delayed writes.
 
 ## [1.1.1] - 2026-11-13
 

@@ -19,6 +19,7 @@ from .protocol import (
     encode_tcp_adu,
     read_tcp_adu,
 )
+from .tcp import open_tcp_connection
 from .trace import GatewayTrace
 
 
@@ -67,8 +68,9 @@ class ModbusTcpBackend(UpstreamBackend):
 
     async def connect(self) -> None:
         try:
-            self.reader, self.writer = await asyncio.wait_for(
-                asyncio.open_connection(self.profile.host, self.profile.port),
+            self.reader, self.writer, _ = await open_tcp_connection(
+                self.profile.host,
+                self.profile.port,
                 self.profile.timing.connect_timeout_s,
             )
             if self.profile.timing.connect_settle_delay_s:
@@ -123,8 +125,9 @@ class RtuOverTcpBackend(UpstreamBackend):
 
     async def connect(self) -> None:
         try:
-            self.reader, self.writer = await asyncio.wait_for(
-                asyncio.open_connection(self.profile.host, self.profile.port),
+            self.reader, self.writer, _ = await open_tcp_connection(
+                self.profile.host,
+                self.profile.port,
                 self.profile.timing.connect_timeout_s,
             )
             if self.profile.timing.connect_settle_delay_s:
@@ -342,109 +345,65 @@ class UpstreamRouter:
         downstream_unit_id: int,
         pdu: bytes,
         profile: ControllerProfile,
-        forwarding_state: Callable[[], tuple[bool, str, float]] | None = None,
+        forwarding_allowed: Callable[[], bool] | None = None,
     ) -> bytes:
+        if forwarding_allowed is not None and not forwarding_allowed():
+            raise UpstreamRequestError(
+                "forwarding is disabled",
+                sent=False,
+                retryable=False,
+            )
         self.metrics.increment("queue_depth")
-        queue_counted = True
-        buffer_deadline: float | None = None
+        turn_acquired = False
+        lock_acquired = False
         try:
-            while True:
-                buffer_deadline = await self._wait_for_forwarding(
-                    forwarding_state=forwarding_state,
-                    deadline=buffer_deadline,
+            try:
+                await self._acquire_client_turn(
+                    client_id,
+                    profile.timing.client_burst_idle_s,
                 )
-                turn_acquired = False
-                lock_acquired = False
-                try:
-                    await self._acquire_client_turn(
-                        client_id,
-                        profile.timing.client_burst_idle_s,
-                    )
-                    turn_acquired = True
-                    await self._lock.acquire()
-                    lock_acquired = True
-                    if forwarding_state is not None:
-                        enabled, policy, buffer_retention_s = forwarding_state()
-                        if not enabled:
-                            if policy == "buffer_all":
-                                if buffer_deadline is None:
-                                    buffer_deadline = (
-                                        monotonic()
-                                        + buffer_retention_s
-                                    )
-                                continue
-                            raise UpstreamRequestError(
-                                "forwarding is disabled",
-                                sent=False,
-                                retryable=False,
-                            )
-                    self.metrics.increment("queue_depth", -1)
-                    queue_counted = False
-                    try:
-                        return await asyncio.wait_for(
-                            self._request_locked(
-                                transaction_id=transaction_id,
-                                downstream_unit_id=downstream_unit_id,
-                                pdu=pdu,
-                                profile=profile,
-                            ),
-                            profile.timing.total_request_timeout_s,
-                        )
-                    except TimeoutError as exc:
-                        self.metrics.increment("timeouts")
-                        await self.close()
-                        self.trace.emit(
-                            "UPSTREAM RX",
-                            transaction_id=transaction_id,
-                            downstream_unit_id=downstream_unit_id,
-                            upstream_unit_id=profile.upstream_unit_id,
-                            pdu=pdu,
-                            exception=exc,
-                        )
-                        raise UpstreamRequestError(
-                            "total request timeout",
-                            sent=True,
-                            timed_out=True,
-                        ) from exc
-                finally:
-                    if lock_acquired:
-                        self._lock.release()
-                    if turn_acquired:
-                        await self._complete_client_turn(client_id)
-        finally:
-            if queue_counted:
+                turn_acquired = True
+                await self._lock.acquire()
+                lock_acquired = True
+            finally:
                 self.metrics.increment("queue_depth", -1)
-
-    async def _wait_for_forwarding(
-        self,
-        *,
-        forwarding_state: Callable[[], tuple[bool, str, float]] | None,
-        deadline: float | None,
-    ) -> float | None:
-        if forwarding_state is None:
-            return deadline
-        while True:
-            enabled, policy, buffer_retention_s = forwarding_state()
-            if enabled:
-                return deadline
-            if policy != "buffer_all":
+            if forwarding_allowed is not None and not forwarding_allowed():
                 raise UpstreamRequestError(
                     "forwarding is disabled",
                     sent=False,
                     retryable=False,
                 )
-            if deadline is None:
-                deadline = monotonic() + buffer_retention_s
-            remaining = deadline - monotonic()
-            if remaining <= 0:
-                self.metrics.increment("timeouts")
-                raise UpstreamRequestError(
-                    "buffered request expired while forwarding was disabled",
-                    sent=False,
-                    timed_out=True,
-                    retryable=False,
+            try:
+                return await asyncio.wait_for(
+                    self._request_locked(
+                        transaction_id=transaction_id,
+                        downstream_unit_id=downstream_unit_id,
+                        pdu=pdu,
+                        profile=profile,
+                    ),
+                    profile.timing.total_request_timeout_s,
                 )
-            await asyncio.sleep(min(0.05, remaining))
+            except TimeoutError as exc:
+                self.metrics.increment("timeouts")
+                await self.close()
+                self.trace.emit(
+                    "UPSTREAM RX",
+                    transaction_id=transaction_id,
+                    downstream_unit_id=downstream_unit_id,
+                    upstream_unit_id=profile.upstream_unit_id,
+                    pdu=pdu,
+                    exception=exc,
+                )
+                raise UpstreamRequestError(
+                    "total request timeout",
+                    sent=True,
+                    timed_out=True,
+                ) from exc
+        finally:
+            if lock_acquired:
+                self._lock.release()
+            if turn_acquired:
+                await self._complete_client_turn(client_id)
 
     async def release_client(self, client_id: int) -> None:
         """Release affinity immediately when a downstream connection closes."""

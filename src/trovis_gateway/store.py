@@ -29,6 +29,18 @@ def _drop_legacy_compatibility(payload: Any) -> bool:
     return changed
 
 
+def _drop_retired_buffering(payload: Any) -> bool:
+    """Remove forwarding-buffer fields written by prerelease 1.2 builds."""
+    if not isinstance(payload, dict):
+        return False
+    changed = False
+    for field in ("disabled_request_policy", "buffer_retention_s"):
+        if field in payload:
+            payload.pop(field)
+            changed = True
+    return changed
+
+
 def _profile_storage(profile: ControllerProfile) -> dict[str, Any]:
     payload = profile.model_dump(mode="json", exclude={"access_key"})
     payload["access_key"] = (
@@ -57,6 +69,7 @@ class ConfigStore:
             if self.path.exists():
                 payload = json.loads(self.path.read_text(encoding="utf-8"))
                 migrated = _drop_legacy_compatibility(payload)
+                migrated = _drop_retired_buffering(payload) or migrated
                 self._config = GatewayConfig.model_validate(payload)
                 if migrated:
                     self._save_locked()
@@ -71,34 +84,20 @@ class ConfigStore:
             return {
                 "schema_version": self._config.schema_version,
                 "forwarding_enabled": self._config.forwarding_enabled,
-                "disabled_request_policy": self._config.disabled_request_policy,
-                "buffer_retention_s": self._config.buffer_retention_s,
                 "active_profile_id": self._config.active_profile_id,
                 "profiles": [public_profile(profile) for profile in self._config.profiles],
             }
 
-    def forwarding_state(self) -> tuple[bool, str, float]:
+    def forwarding_enabled(self) -> bool:
         with self._lock:
-            return (
-                self._config.forwarding_enabled,
-                self._config.disabled_request_policy,
-                self._config.buffer_retention_s,
-            )
+            return self._config.forwarding_enabled
 
-    def set_forwarding_state(
-        self,
-        *,
-        enabled: bool,
-        policy: str,
-        buffer_retention_s: float,
-    ) -> None:
+    def set_forwarding_enabled(self, enabled: bool) -> None:
         with self._lock:
             candidate = GatewayConfig.model_validate(
                 {
                     **self._config.model_dump(),
                     "forwarding_enabled": enabled,
-                    "disabled_request_policy": policy,
-                    "buffer_retention_s": buffer_retention_s,
                 }
             )
             self._config = candidate
@@ -141,8 +140,6 @@ class ConfigStore:
             self._config = GatewayConfig(
                 schema_version=self._config.schema_version,
                 forwarding_enabled=self._config.forwarding_enabled,
-                disabled_request_policy=self._config.disabled_request_policy,
-                buffer_retention_s=self._config.buffer_retention_s,
                 active_profile_id=active_id,
                 profiles=profiles,
             )
@@ -160,8 +157,6 @@ class ConfigStore:
             self._config = GatewayConfig(
                 schema_version=self._config.schema_version,
                 forwarding_enabled=self._config.forwarding_enabled,
-                disabled_request_policy=self._config.disabled_request_policy,
-                buffer_retention_s=self._config.buffer_retention_s,
                 active_profile_id=active_id,
                 profiles=profiles,
             )
@@ -179,8 +174,6 @@ class ConfigStore:
         payload = {
             "schema_version": self._config.schema_version,
             "forwarding_enabled": self._config.forwarding_enabled,
-            "disabled_request_policy": self._config.disabled_request_policy,
-            "buffer_retention_s": self._config.buffer_retention_s,
             "active_profile_id": self._config.active_profile_id,
             "profiles": [_profile_storage(profile) for profile in self._config.profiles],
         }

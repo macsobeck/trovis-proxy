@@ -2,6 +2,11 @@
 
 [English](README.md) | Deutsch
 
+> **Neu in 1.2.0:** Die Reglerweiterleitung lässt sich über die Weboberfläche sicher pausieren.
+> Zusätzlich stehen die Timing-Voreinstellungen Schnell, Standard, Zuverlässig und Benutzerdefiniert
+> sowie eine verbesserte Verarbeitung von DNS-Namen für Reglerverbindungen bereit. Einzelheiten
+> enthält das [Changelog](CHANGELOG.md#120---2026-11-21).
+
 Der **TROVIS Modbus Proxy** ist ein selbst gehosteter Modbus-Proxy für eine zuverlässige
 Kommunikation zwischen **SAMSON TROVIS-VIEW** und TROVIS-Heizungsreglern, einschließlich der
 Baureihe **SAMSON TROVIS 5573-1xxx**. Er stellt TROVIS-VIEW einen stabilen Modbus-TCP-Endpunkt
@@ -86,9 +91,8 @@ weiteren Stärken entwickelt:
   sichere Wiederholungen von Lesezugriffen und proaktive Neuverbindungen stabilisieren die
   Kommunikation mit Reglern und Ethernet-Adaptern.
 - **Kontrollierte Wartungspausen:** Die Weiterleitung kann angehalten werden, ohne den Dienst zu
-  stoppen. Neue Anfragen werden entweder sofort abgewiesen oder vollständig für einstellbare
-  1–3600 Sekunden gepuffert. Gepufferte Schreibanfragen werden nach dem Fortsetzen ausgeführt,
-  selbst wenn ihr Client bereits einen Timeout gemeldet hat.
+  stoppen. Neue und bereits wartende Anfragen werden mit der Modbus-Ausnahme `0x0B` abgewiesen;
+  aktive Anfragen werden sicher beendet und nichts wird zur späteren Ausführung gespeichert.
 - **Praktische Timing-Profile:** Schnell, Standard und Zuverlässig decken typische Betriebsfälle
   ab; mit Benutzerdefiniert bleiben alle Timingwerte einzeln einstellbar.
 - **Geschützte Schreibvorgänge:** Schreibvorgänge werden nach einem uneindeutigen Ergebnis niemals
@@ -109,9 +113,10 @@ weiteren Stärken entwickelt:
 
 ![RTU-over-TCP-Reglerprofil des TROVIS Modbus Proxy](docs/images/controller-connection.png)
 
-*Reglerprofil mit RTU-over-TCP, Ziel, Modbus Unit ID und Zugriffseinstellungen.*
+*Reglerprofil mit RTU-over-TCP, Ziel, Modbus Unit ID und hervorgehobener Auswahl für die
+Timing-Voreinstellung.*
 
-*Private Netzwerkadressen sind in beiden Oberflächenbeispielen unkenntlich gemacht.*
+*Private Netzwerkadressen sind in beiden Oberflächenbeispielen anonymisiert.*
 
 ![USR-Adapter für transparenten RTU-over-TCP-Betrieb](docs/images/usr-adapter-settings.png)
 

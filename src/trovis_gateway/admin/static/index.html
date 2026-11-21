@@ -29,24 +29,14 @@
 
       <section class="card parameter-cluster forwarding-control">
         <header class="cluster-heading">
-          <div><p class="cluster-kicker">Operation</p><h2>Forwarding control</h2><p>Temporarily pause controller forwarding without stopping the Modbus Proxy.</p></div>
+          <div><p class="cluster-kicker">Operation</p><h2>Forwarding control</h2><p>Pause controller forwarding without stopping the Modbus Proxy. Active requests finish; new and queued requests receive Modbus exception 0x0B.</p></div>
           <label class="switch" for="forwarding-toggle">
             <input id="forwarding-toggle" type="checkbox" role="switch">
             <span class="switch-track" aria-hidden="true"><span></span></span>
             <strong id="forwarding-label">On</strong>
           </label>
         </header>
-        <div class="parameter-list">
-          <div class="parameter-row">
-            <label class="parameter-label" for="disabled-request-policy">When paused</label>
-            <div class="parameter-value"><select id="disabled-request-policy"><option value="reject">Without buffering</option><option value="buffer_all">Buffer all requests</option></select><small>Buffered writes are forwarded after resuming, even if their client has already timed out.</small></div>
-          </div>
-          <div class="parameter-row hidden" id="buffer-retention-row">
-            <label class="parameter-label" for="buffer-retention">Buffer retention</label>
-            <div class="parameter-value input-with-unit"><input id="buffer-retention" type="number" min="1" max="3600" step="1" value="300"><span>s</span><small>Range: 1–3600 s; default: 300 s. Expired requests are discarded and are not forwarded later.</small></div>
-          </div>
-          <div id="forwarding-message" class="forwarding-message" role="status" aria-live="polite"></div>
-        </div>
+        <div id="forwarding-message" class="forwarding-message" role="status" aria-live="polite"></div>
       </section>
 
       <div class="status-columns">
@@ -118,7 +108,7 @@
               </div>
               <div class="parameter-row" id="host-field">
                 <label class="parameter-label" for="host">Host</label>
-                <div class="parameter-value"><input id="host" placeholder="192.168.1.40"></div>
+                <div class="parameter-value"><input id="host" placeholder="192.168.1.40"><small>DNS addresses follow the system resolver order. If IPv6 is returned first but is unavailable, the proxy tries IPv4 after the IPv6 connection timeout.</small></div>
               </div>
               <div class="parameter-row" id="port-field">
                 <label class="parameter-label" for="port">Port</label>

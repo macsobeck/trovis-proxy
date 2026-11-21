@@ -2,6 +2,10 @@
 
 English | [Deutsch](README.de.md)
 
+> **New in 1.2.0:** Pause controller forwarding safely from the web interface, choose between
+> Fast, Standard, Reliable, and Custom timing presets, and use improved DNS-name handling for
+> controller connections. See the [changelog](CHANGELOG.md#120---2026-11-21) for details.
+
 The **TROVIS Modbus Proxy** is a self-hosted Modbus Proxy for reliable communication between
 **SAMSON TROVIS-VIEW** and TROVIS heating controllers, including the **SAMSON TROVIS 5573-1xxx**
 series. It provides a stable Modbus TCP endpoint for TROVIS-VIEW and connects to the controller
@@ -78,8 +82,8 @@ strengths:
 - **Reliable connection management:** Configurable pacing, timeouts, safe read retries, and
   proactive reconnection help stabilize communication with controllers and Ethernet adapters.
 - **Controlled maintenance pauses:** Forwarding can be paused without stopping the service. New
-  requests can either be rejected immediately or all requests can be buffered for a configurable
-  1–3600 seconds. Buffered writes execute after resuming, even if their client has timed out.
+  and already queued requests are rejected with Modbus exception `0x0B`; active requests finish
+  safely, and nothing is stored for later execution.
 - **Practical timing presets:** Fast, Standard, and Reliable presets cover common operating
   conditions, while Custom keeps every timing value individually adjustable.
 - **Protected write operations:** Writes are never repeated after an ambiguous result, reducing
@@ -100,9 +104,10 @@ strengths:
 
 ![TROVIS Modbus Proxy RTU-over-TCP controller profile](docs/images/controller-connection.png)
 
-*Controller profile using RTU-over-TCP with its target, Modbus unit ID, and access settings.*
+*Controller profile using RTU-over-TCP with its target, Modbus unit ID, and highlighted timing
+preset selector.*
 
-*Private network addresses are redacted in both interface examples.*
+*Private network addresses are anonymized in both interface examples.*
 
 ![USR adapter configured for transparent RTU-over-TCP operation](docs/images/usr-adapter-settings.png)
 

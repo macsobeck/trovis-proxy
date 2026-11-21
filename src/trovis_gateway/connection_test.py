@@ -8,6 +8,7 @@ from time import monotonic
 from typing import Any
 
 from .config import ControllerProfile, TransportType
+from .tcp import open_tcp_connection
 
 
 async def test_connection(profile: ControllerProfile) -> dict[str, Any]:
@@ -30,18 +31,23 @@ async def test_connection(profile: ControllerProfile) -> dict[str, Any]:
 
     writer: asyncio.StreamWriter | None = None
     try:
-        _, writer = await asyncio.wait_for(
-            asyncio.open_connection(profile.host, profile.port),
+        _, writer, resolved_target = await open_tcp_connection(
+            profile.host,
+            profile.port,
             profile.timing.connect_timeout_s,
         )
         return {
             "ok": True,
             "transport": profile.transport.value,
             "target": profile.target_label(),
+            "resolved_target": resolved_target,
             "upstream_unit_id": profile.upstream_unit_id,
             "latency_ms": round((monotonic() - started) * 1000, 3),
             "modbus_test": "not_performed",
-            "detail": "TCP connection established; no Modbus request was sent.",
+            "detail": (
+                f"TCP connection established via {resolved_target}; "
+                "no Modbus request was sent."
+            ),
         }
     except Exception as exc:
         return {

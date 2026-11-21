@@ -18,7 +18,7 @@ const timingPresets = {
   standard: { ...defaults.timing },
   reliable: { connect_timeout_s: 5, response_timeout_s: 4, total_request_timeout_s: 20, minimum_request_interval_s: .2, client_burst_idle_s: 1, connect_settle_delay_s: .5, reconnect_delay_s: 2, max_connection_age_s: 25 }
 };
-let config = { forwarding_enabled: true, disabled_request_policy: "reject", buffer_retention_s: 300, active_profile_id: null, profiles: [] };
+let config = { forwarding_enabled: true, active_profile_id: null, profiles: [] };
 let selectedId = null;
 let forwardingRequestInFlight = false;
 const $ = id => document.getElementById(id);
@@ -171,8 +171,6 @@ async function refreshStatus() {
     $("health-dot").classList.toggle("ok", status.forwarding_enabled); $("health-dot").classList.toggle("paused", !status.forwarding_enabled); $("health-label").textContent = status.forwarding_enabled ? "Modbus Proxy ready" : "Forwarding paused";
     if (!forwardingRequestInFlight) {
       $("forwarding-toggle").checked = status.forwarding_enabled;
-      $("disabled-request-policy").value = status.disabled_request_policy;
-      $("buffer-retention").value = status.buffer_retention_s;
       updateForwardingControls();
     }
     $("proxy-badge").textContent = status.forwarding_enabled ? "Ready" : "Paused"; $("proxy-badge").classList.toggle("status-indicator-ok", status.forwarding_enabled); $("proxy-badge").classList.toggle("status-indicator-paused", !status.forwarding_enabled);
@@ -186,7 +184,6 @@ async function refreshStatus() {
 function updateForwardingControls() {
   const enabled = $("forwarding-toggle").checked;
   $("forwarding-label").textContent = enabled ? "On" : "Off";
-  $("buffer-retention-row").classList.toggle("hidden", $("disabled-request-policy").value !== "buffer_all");
 }
 
 async function saveForwardingState() {
@@ -195,8 +192,8 @@ async function saveForwardingState() {
   $("forwarding-message").textContent = "Saving …";
   $("forwarding-message").classList.remove("error");
   try {
-    await api("/api/forwarding", { method: "POST", body: JSON.stringify({ enabled: $("forwarding-toggle").checked, disabled_request_policy: $("disabled-request-policy").value, buffer_retention_s: number("buffer-retention") }) });
-    $("forwarding-message").textContent = $("forwarding-toggle").checked ? "Forwarding is active." : "Forwarding is paused.";
+    await api("/api/forwarding", { method: "POST", body: JSON.stringify({ enabled: $("forwarding-toggle").checked }) });
+    $("forwarding-message").textContent = $("forwarding-toggle").checked ? "Forwarding is active." : "Forwarding is paused. Requests are not stored.";
   } catch (error) {
     $("forwarding-message").textContent = error.message;
     $("forwarding-message").classList.add("error");
@@ -209,7 +206,7 @@ async function saveForwardingState() {
 document.querySelectorAll(".nav-button").forEach(button => button.addEventListener("click", () => showView(button.dataset.view)));
 $("refresh-status").addEventListener("click", refreshStatus); $("new-profile").addEventListener("click", newProfile); $("profile-form").addEventListener("submit", saveProfile);
 $("transport").addEventListener("change", transportChanged); $("test-profile").addEventListener("click", testProfile); $("activate-profile").addEventListener("click", activateProfile); $("delete-profile").addEventListener("click", deleteProfile);
-$("forwarding-toggle").addEventListener("change", saveForwardingState); $("disabled-request-policy").addEventListener("change", saveForwardingState); $("buffer-retention").addEventListener("change", saveForwardingState);
+$("forwarding-toggle").addEventListener("change", saveForwardingState);
 $("timing-preset").addEventListener("change", event => applyTimingPreset(event.target.value));
 Object.values(timingFields).forEach(id => $(id).addEventListener("input", () => { $("timing-preset").value = "custom"; }));
 $("toggle-key").addEventListener("click", () => { const input=$("access-key"), visible=input.type === "text"; input.type=visible?"password":"text"; $("toggle-key").textContent=visible?"Show":"Hide"; });
