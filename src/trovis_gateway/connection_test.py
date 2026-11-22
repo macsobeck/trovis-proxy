@@ -8,7 +8,7 @@ from time import monotonic
 from typing import Any
 
 from .config import ControllerProfile, TransportType
-from .tcp import open_tcp_connection
+from .tcp import TcpConnectionTiming, open_tcp_connection
 
 
 async def test_connection(profile: ControllerProfile) -> dict[str, Any]:
@@ -30,39 +30,41 @@ async def test_connection(profile: ControllerProfile) -> dict[str, Any]:
         }
 
     writer: asyncio.StreamWriter | None = None
+    timing = TcpConnectionTiming()
+    result: dict[str, Any] = {
+        "transport": profile.transport.value,
+        "target": profile.target_label(),
+        "upstream_unit_id": profile.upstream_unit_id,
+        "modbus_test": "not_performed",
+    }
     try:
         _, writer, resolved_target = await open_tcp_connection(
             profile.host,
             profile.port,
             profile.timing.connect_timeout_s,
+            address_preference=profile.address_preference,
+            timing=timing,
         )
-        return {
-            "ok": True,
-            "transport": profile.transport.value,
-            "target": profile.target_label(),
-            "resolved_target": resolved_target,
-            "upstream_unit_id": profile.upstream_unit_id,
-            "latency_ms": round((monotonic() - started) * 1000, 3),
-            "modbus_test": "not_performed",
-            "detail": (
+        result.update(
+            ok=True,
+            resolved_target=resolved_target,
+            detail=(
                 f"TCP connection established via {resolved_target}; "
                 "no Modbus request was sent."
             ),
-        }
+        )
     except Exception as exc:
-        return {
-            "ok": False,
-            "transport": profile.transport.value,
-            "target": profile.target_label(),
-            "upstream_unit_id": profile.upstream_unit_id,
-            "latency_ms": round((monotonic() - started) * 1000, 3),
-            "modbus_test": "not_performed",
-            "detail": f"{type(exc).__name__}: {exc}",
-        }
+        result.update(ok=False, detail=str(exc) or type(exc).__name__)
     finally:
+        result["latency_ms"] = round((monotonic() - started) * 1000, 3)
         if writer is not None:
             writer.close()
             try:
                 await writer.wait_closed()
             except Exception:
                 pass
+    if timing.dns_ms is not None:
+        result["dns_latency_ms"] = round(timing.dns_ms, 3)
+    if timing.tcp_ms is not None:
+        result["tcp_latency_ms"] = round(timing.tcp_ms, 3)
+    return result

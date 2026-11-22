@@ -7,6 +7,14 @@ semantic versioning.
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-22
+
+### Added
+
+- TCP controller profiles can prefer IPv4, prefer IPv6, or follow the system resolver order.
+- The Docker image includes `dig`, `nslookup`, `ping`, and `traceroute` for network diagnostics.
+- The web connection test reports DNS and TCP timings and the endpoint reached.
+
 ### Changed
 
 - The Standard timing preset allows 16 seconds per request including queue time and keeps
@@ -17,6 +25,26 @@ semantic versioning.
 - Reject upstream responses whose function code, byte count, or write echo cannot belong to the
   current request. A mismatch now closes the connection and discards queued frames before a safe
   read retry, preventing shifted RTU-over-TCP responses from being assigned to later requests.
+- Reject RTU-over-TCP streams with bytes waiting before a request or after a complete reply,
+  including stale frames whose function and size match the next read.
+- Apply the response timeout to the complete RTU-over-TCP frame and shorten connection attempts
+  when DNS offers an address of the other family as a fallback.
+- Include queue time in the total request deadline. Expired queued requests return Modbus
+  exception `0x0B` while the active request continues.
+- Enforce the reconnect delay after an expired upstream exchange. Discard late RTU-over-TCP data
+  and require a quiet interval on the replacement stream before sending another request.
+- Reuse recent DNS results on upstream reconnects. Refresh them in the background and resolve
+  immediately when cached addresses fail.
+- Share the connection timeout across DNS and TCP and try the alternate address family
+  promptly when the preferred endpoint stalls.
+- Defer scheduled TCP renewal until the next client sequence so a planned reconnect cannot
+  split consecutive requests from a configuration read.
+
+### Documentation
+
+- Documented that a second configuration read in TROVIS-VIEW can fail even with a direct USR
+  adapter connection. Restarting TROVIS-VIEW allows another successful read in the tested setup.
+  See the [README note on repeated configuration reads](README.md#repeated-configuration-reads-in-trovis-view).
 
 ## [1.2.0] - 2026-11-21
 
@@ -81,7 +109,8 @@ semantic versioning.
 - Hardened the runtime image by upgrading operating-system packages, updating and removing the
   build-time package installer, and running the service as an unprivileged user.
 
-[Unreleased]: https://github.com/macsobeck/trovis-proxy/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/macsobeck/trovis-proxy/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/macsobeck/trovis-proxy/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/macsobeck/trovis-proxy/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/macsobeck/trovis-proxy/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/macsobeck/trovis-proxy/releases/tag/v1.1.0

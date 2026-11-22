@@ -2,10 +2,25 @@
 
 [English](README.md) | Deutsch
 
-> **Neu in 1.2.0:** Die Reglerweiterleitung lässt sich über die Weboberfläche sicher pausieren.
-> Zusätzlich stehen die Timing-Voreinstellungen Schnell, Standard, Zuverlässig und Benutzerdefiniert
-> sowie eine verbesserte Verarbeitung von DNS-Namen für Reglerverbindungen bereit. Einzelheiten
-> enthält das [Changelog](CHANGELOG.md#120---2026-11-21).
+> **Neu in 1.2.1**
+>
+> - **Modbus-Antwortprüfung.** Der Proxy verwirft unpassende Antworten und erkennt bei RTU-over-TCP
+>   zusätzliche oder verspätete Daten. Nach einem Fehler baut er die Verbindung kontrolliert neu auf.
+> - **Parallelzugriff und Timing.** Der Gesamt-Timeout umfasst auch die Warteschlange. Geplante
+>   TCP-Neuverbindungen erfolgen zwischen Abfragesequenzen. Das Profil **Standard** verwendet jetzt
+>   **16 s Gesamt-Timeout** und **0,8 s Client-Leerlauffenster**.
+> - **DNS und Verbindungsaufbau.** Pro Reglerprofil lassen sich IPv4, IPv6 oder die Systemreihenfolge
+>   wählen. Der Proxy weicht schneller auf die andere Adressfamilie aus und nutzt aktuelle
+>   DNS-Ergebnisse beim Wiederverbinden erneut.
+> - **Netzwerkdiagnose.** Der Web-Verbindungstest zeigt DNS-Zeit, TCP-Zeit und erreichbare Ziel-IP.
+>   Das Dockerfile ergänzt `dig`, `nslookup`, `ping` und `traceroute`.
+> - **TROVIS-VIEW-Hinweis.** Im getesteten Aufbau funktioniert das erste Auslesen nach einem
+>   Neustart von TROVIS-VIEW zuverlässig. Beim zweiten Auslesen verwendet TROVIS-VIEW eine andere
+>   Abfolge von Abfragen. Dabei kann eine Fehlermeldung erscheinen. Das Verhalten tritt auch bei
+>   direkter Verbindung zum USR-Adapter auf und ist damit unabhängig vom Proxy.
+>   Näheres siehe [FAQ](#hinweis-zum-wiederholten-auslesen-mit-trovis-view).
+>
+> Einzelheiten stehen im [Changelog](CHANGELOG.md#121---2026-11-22).
 
 Der **TROVIS Modbus Proxy** ist ein selbst gehosteter Modbus-Proxy für eine zuverlässige
 Kommunikation zwischen **SAMSON TROVIS-VIEW** und TROVIS-Heizungsreglern, einschließlich der
@@ -189,9 +204,8 @@ Wählen Sie die [deutsche Schritt-für-Schritt-Anleitung](docs/gateway/installat
 - Unbekannte und herstellerspezifische Funktionscodes werden undurchsichtig weitergeleitet und
   bleiben nachvollziehbar.
 - Alle Modbus-PDUs, einschließlich FC01-Adressen, werden unverändert weitergeleitet.
-- TCP-Verbindungen werden standardmäßig nach 25 Sekunden und damit vor der beobachteten
-  30-Sekunden-Sitzungsgrenze des Reglers erneuert. Die Erneuerung erfolgt vor einer Anfrage und
-  wiederholt niemals einen uneindeutigen Schreibzugriff.
+- Die geplante Erneuerung der TCP-Verbindung wird standardmäßig nach 25 Sekunden fällig und
+  erfolgt vor der nächsten Abfragesequenz.
 - Alle Anfragen an einen Regler werden serialisiert und zeitlich gesteuert. Aufeinanderfolgende
   Anfragen eines verbundenen Clients behalten kurzzeitig Vorrang, damit kein anderer Client eine
   Abfragesequenz unterbrechen kann.
@@ -226,6 +240,14 @@ Neustarts und ein dauerhaft eingebundenes Verzeichnis `./data` für die Reglerpr
 Verwenden Sie `TCP Server` mit dem Protokollmodus `None` und wählen Sie anschließend im Profil des
 Modbus Proxy `RTU-over-TCP`. Aktivieren Sie für die TROVIS-VIEW-Kommunikation nicht den
 Konvertierungsmodus `ModbusTCP` des Adapters.
+
+### Hinweis zum wiederholten Auslesen mit TROVIS-VIEW
+
+Im getesteten Aufbau funktioniert das erste Auslesen nach einem Neustart von TROVIS-VIEW
+zuverlässig. Beim zweiten Auslesen verwendet TROVIS-VIEW eine andere Abfolge von Abfragen. Dabei
+kann eine Fehlermeldung erscheinen. Das Verhalten tritt auch bei einer direkten Verbindung zum
+USR-Adapter auf und ist damit unabhängig vom Proxy. Tritt der Fehler auf, ermöglicht ein Neustart
+von TROVIS-VIEW einen weiteren erfolgreichen Auslesevorgang.
 
 ## Entwicklungsunterstützung
 

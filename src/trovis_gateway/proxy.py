@@ -71,6 +71,7 @@ class ModbusProxy:
                 profile = self.store.active_profile()
                 self.trace.emit(
                     "DOWNSTREAM RX",
+                    client_id=client_id,
                     transaction_id=request.transaction_id,
                     downstream_unit_id=request.unit_id,
                     upstream_unit_id=profile.upstream_unit_id if profile else None,
@@ -93,10 +94,12 @@ class ModbusProxy:
 
                 self.trace.emit(
                     "DOWNSTREAM TX",
+                    client_id=client_id,
                     transaction_id=request.transaction_id,
                     downstream_unit_id=request.unit_id,
                     upstream_unit_id=profile.upstream_unit_id if profile else None,
-                    pdu=response_pdu,
+                    pdu=request.pdu,
+                    response_pdu=response_pdu,
                 )
                 writer.write(
                     encode_tcp_adu(request.transaction_id, request.unit_id, response_pdu)

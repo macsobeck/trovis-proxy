@@ -37,15 +37,27 @@ removes it. `key_mode` is fixed to `pass-through`, so the stored key is not inje
 and addresses are forwarded unchanged. Obsolete FC01 offset settings from earlier builds are
 removed automatically when the configuration is loaded.
 
-TCP profile hosts may be IPv4 addresses, IPv6 addresses, or DNS names. DNS names are resolved in a
-separate step with a 10-second resolution limit. The configured **Connection timeout** then applies
-only to opening the TCP connection to each resolved numeric address. The connection test reports
-the address it used, for example `trovis.example.test:7112` via `10.1.30.230:7112`.
+TCP profile hosts may be IPv4 addresses, IPv6 addresses, or DNS names. The proxy passes names to the
+container's system resolver and uses IP literals directly. The configured **Connection timeout**
+is shared by DNS resolution and all TCP attempts, including any lookup and retry after a cached
+address fails. **Test connection** shows the time spent on DNS and TCP and reports the endpoint it
+reached, for example `trovis.example.test:7112` via `192.0.2.20:7112`. With `--log-level DEBUG`,
+the proxy logs lookup and per-address connection timings.
 
-Resolved addresses are attempted in the order supplied by the system resolver. When IPv6 is listed
-first but is unavailable, the proxy waits for that connection attempt to fail or reach the configured
-**Connection timeout**, then tries the IPv4 address. The resulting fallback delay is expected and does
-not affect requests after the persistent upstream connection has been established.
+For reconnects to the same controller, the proxy reuses recently resolved addresses. Starting
+after 60 seconds, the next reconnect refreshes DNS in the background. The proxy uses DNS results for
+at most 120 seconds and resolves again immediately if cached addresses cannot be reached.
+**Test connection** performs its own lookup to show the current resolver behavior.
+
+For a DNS name, **IP address preference** controls which address family is tried first. Existing
+profiles use **System order**. **Prefer IPv4** and **Prefer IPv6** move that family to the front,
+keeping the other family available. When both families are available, the proxy alternates
+between them. It starts the next family after at most 300 ms, or sooner if the current attempt
+fails or the remaining budget requires it. Attempts are sequential so the proxy opens only one
+connection to the adapter. The same preference applies to **Test connection**.
+
+Keep a configuration backup when reverting to an older release. Version 1.2.0 and earlier
+do not recognize the new per-profile `address_preference` field.
 
 The **Client sequence idle window** defaults to `0.8` seconds. After a request completes, the same
 downstream TCP connection keeps controller affinity for this long. Consecutive requests from
@@ -54,11 +66,22 @@ another client's polling sequence. Waiting clients are served in arrival order o
 client is idle. Set the value to `0` only to restore request-by-request arbitration. Clients must
 allow enough response time for a polling sequence already in progress.
 
-TCP profiles also limit a persistent upstream connection to `25` seconds by default. Before the
-next request would use an older connection, the Modbus Proxy closes it, observes the configured
-reconnect delay, and opens a fresh connection. This avoids the approximately 30-second session
-boundary observed in controller captures. The renewal happens before a request is sent, so it does
-not repeat an ambiguous write. Set the maximum connection age to `0` to disable this behavior.
+**Total timeout** starts when the proxy accepts a complete client request. The budget covers queue
+time, request pacing, connection setup, recovery, and retries. A request that expires in the queue
+receives Modbus exception `0x0B` and never reaches the controller. The proxy lets the current
+exchange continue. If a request expires during an exchange, the proxy closes that upstream
+connection while returning `0x0B` to the affected client.
+
+TCP profiles schedule upstream connection renewal at an age of `25` seconds by default. If a
+client is still sending requests within its sequence idle window, the current connection can
+exceed that age. The proxy closes it and observes the configured reconnect delay before the first
+request of the next sequence. This age was chosen for the approximately 30-second session
+boundary observed in controller captures. Set the age to `0` to disable scheduled renewal.
+
+After an RTU-over-TCP error, the proxy observes **Reconnect delay** before opening a new
+connection. It then waits for a quiet interval equal to **Connection settle delay** (at least
+50 ms), discarding any incoming bytes and restarting that interval. The total timeout bounds this
+recovery even if the adapter keeps sending data. Successful exchanges need no recovery wait.
 
 Infrastructure settings are deliberately separate:
 

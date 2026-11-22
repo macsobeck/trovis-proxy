@@ -12,6 +12,7 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
 DEFAULT_LISTEN_PORT = 7112
+AddressPreference = Literal["system", "ipv4", "ipv6"]
 
 
 class TransportType(StrEnum):
@@ -60,6 +61,7 @@ class ControllerProfile(BaseModel):
     description: str = Field(default="", max_length=1000)
     transport: TransportType = TransportType.RTU_OVER_TCP
     host: str = Field(default="", max_length=253)
+    address_preference: AddressPreference = "system"
     port: int = Field(default=502, ge=1, le=65535)
     upstream_unit_id: int = Field(default=247, ge=1, le=247)
     access_key: SecretStr | None = Field(default=None, repr=False)
@@ -81,6 +83,7 @@ class ControllerProfile(BaseModel):
         return (
             self.transport,
             self.host,
+            self.address_preference,
             self.port,
             self.upstream_unit_id,
             self.serial.device,

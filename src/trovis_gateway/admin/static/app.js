@@ -86,6 +86,7 @@ function selectProfile(id) {
   $("description").value = profile.description;
   $("transport").value = profile.transport;
   $("host").value = profile.host;
+  $("address-preference").value = profile.address_preference ?? "system";
   $("port").value = profile.port;
   $("upstream-unit-id").value = profile.upstream_unit_id;
   $("access-key").value = "";
@@ -131,6 +132,7 @@ function payload() {
   return {
     name: $("name").value.trim(), description: $("description").value.trim(), transport: $("transport").value,
     host: $("host").value.trim(), port: number("port"), upstream_unit_id: number("upstream-unit-id"),
+    address_preference: $("address-preference").value,
     access_key: $("access-key").value, clear_access_key: $("clear-key").checked, key_mode: "pass-through",
     serial: { device: $("serial-device").value.trim(), baudrate: number("baudrate"), data_bits: number("data-bits"), parity: $("parity").value, stop_bits: number("stop-bits") },
     timing: { connect_timeout_s: number("connect-timeout"), response_timeout_s: number("response-timeout"), total_request_timeout_s: number("total-timeout"), minimum_request_interval_s: number("minimum-interval"), client_burst_idle_s: number("client-burst-idle"), connect_settle_delay_s: number("settle-delay"), reconnect_delay_s: number("reconnect-delay"), max_connection_age_s: number("max-connection-age") },
@@ -141,6 +143,7 @@ function payload() {
 function transportChanged() {
   const serial = $("transport").value === "serial_rtu";
   $("serial-fields").classList.toggle("hidden", !serial); $("host-field").classList.toggle("hidden", serial); $("port-field").classList.toggle("hidden", serial);
+  $("address-preference-field").classList.toggle("hidden", serial);
   $("host").required = !serial; $("serial-device").required = serial;
 }
 
@@ -157,7 +160,16 @@ async function saveProfile(event) {
 
 async function testProfile() {
   message("Testing connection …");
-  try { const body = payload(); if (selectedId) body.id = selectedId; const result = await api("/api/test-connection", { method:"POST", body:JSON.stringify(body) }); message(`${result.ok ? "Reachable" : "Not reachable"}: ${result.target} · Unit ${result.upstream_unit_id} · ${result.latency_ms} ms · Modbus test not performed. ${result.detail}`, !result.ok); }
+  try {
+    const body = payload();
+    if (selectedId) body.id = selectedId;
+    const result = await api("/api/test-connection", { method: "POST", body: JSON.stringify(body) });
+    const timings = [`${result.latency_ms} ms total`];
+    if (result.dns_latency_ms != null) timings.push(`DNS ${result.dns_latency_ms} ms`);
+    if (result.tcp_latency_ms != null) timings.push(`TCP ${result.tcp_latency_ms} ms`);
+    const status = result.ok ? "Reachable" : "Not reachable";
+    message(`${status}: ${result.target} · Unit ${result.upstream_unit_id} · ${timings.join(" · ")}. ${result.detail}`, !result.ok);
+  }
   catch (error) { message(error.message, true); }
 }
 

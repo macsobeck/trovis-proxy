@@ -59,6 +59,7 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
                 "name": "Admin Test",
                 "transport": "modbus_tcp",
                 "host": "127.0.0.1",
+                "address_preference": "ipv4",
                 "access_key": "secret-value",
             },
         )
@@ -68,6 +69,10 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         profile = document["profiles"][0]
         self.assertEqual(profile["access_key"], "")
         self.assertTrue(profile["access_key_configured"])
+        self.assertEqual(profile["address_preference"], "ipv4")
+        reloaded = ConfigStore(self.store.path).load()
+        assert reloaded.profiles
+        self.assertEqual(reloaded.profiles[0].address_preference, "ipv4")
         self.assertNotIn("secret-value", body)
         self.assertNotIn("listen_port", profile)
         self.assertNotIn("compatibility", profile)
@@ -76,7 +81,7 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(profile["timing"]["total_request_timeout_s"], 16)
         _, status_body = await self.fetch("/api/status")
         self.assertNotIn("secret-value", status_body)
-        self.assertEqual(json.loads(status_body)["version"], "1.2.0")
+        self.assertEqual(json.loads(status_body)["version"], "1.2.1")
 
     async def test_forwarding_state_can_be_changed_and_is_reported(self) -> None:
         status, body = await self.fetch(
@@ -107,7 +112,7 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('<h2>Modbus Proxy</h2>', html)
         self.assertNotIn('<h2>Gateway</h2>', html)
         self.assertIn("Design by macsobeck", html)
-        self.assertIn('<span id="release-version">Release 1.2.0</span>', html)
+        self.assertIn('<span id="release-version">Release 1.2.1</span>', html)
         self.assertIn("TROVIS-VIEW Listener", html)
         self.assertIn('class="parameter-row"', html)
         self.assertIn('class="parameter-label"', html)
@@ -120,6 +125,10 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn('id="disabled-request-policy"', html)
         self.assertNotIn('id="buffer-retention"', html)
         self.assertIn('id="timing-preset"', html)
+        self.assertIn('id="address-preference"', html)
+        self.assertIn('<option value="system">System order (default)</option>', html)
+        self.assertIn('<option value="ipv4">Prefer IPv4</option>', html)
+        self.assertIn('<option value="ipv6">Prefer IPv6</option>', html)
         self.assertIn('<option value="fast">Fast</option>', html)
         self.assertIn('<option value="standard">Standard (recommended)</option>', html)
         self.assertIn('<option value="reliable">Reliable</option>', html)

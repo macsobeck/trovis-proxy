@@ -141,9 +141,8 @@ Enter the settings for the connection from the Modbus Proxy to the controller:
    must match the actual controller.
 5. Optionally store the access key. It remains in pass-through mode and is not
    injected into Modbus traffic.
-6. Keep **Maximum connection age** at `25 s` for the observed TROVIS controller behavior. The
-   Modbus Proxy then renews the TCP connection before the controller's approximately 30-second session
-   boundary. Set it to `0` only when the controller supports unrestricted persistent sessions.
+6. Keep **Maximum connection age** at `25 s` as a starting point. After that age the proxy renews
+   the connection before the next client sequence. A value of `0` disables scheduled renewal.
 7. Start with **Standard (recommended)** for shared access. Its **Client sequence idle window**
    of `0.8 s` keeps consecutive requests from one client together across short pauses. Its
    **Total timeout** of `16 s` includes time waiting behind another client's sequence.
@@ -317,6 +316,25 @@ Verify the active profile, controller host and port, routing, and adapter mode.
 For a USR adapter, set Socket A to `TCP Server` with protocol mode `None` and
 select `RTU-over-TCP` in the Modbus Proxy. The adapter must transport raw Modbus RTU
 frames rather than converting them to Modbus TCP.
+
+### Diagnose DNS and network reachability
+
+**Test connection** shows DNS and TCP timings and the IP address reached. To compare results
+from inside the container, replace `trovis-proxy-local` and `trovis.example.test` with your
+container name and adapter hostname.
+
+```bash
+docker exec trovis-proxy-local nslookup trovis.example.test
+docker exec trovis-proxy-local dig trovis.example.test A
+docker exec trovis-proxy-local dig trovis.example.test AAAA
+docker exec trovis-proxy-local ping -c 3 trovis.example.test
+docker exec trovis-proxy-local traceroute trovis.example.test
+```
+
+For a short hostname, use `dig +search` to include the container's configured search domains.
+`ping` requires permission to open an ICMP socket and an ICMP reply from the target. The
+default UDP mode of `traceroute` depends on ICMP replies along the route. Use the TCP test in
+the web UI to verify that the adapter port is reachable.
 
 ### Requests return Modbus exception `0x0B`
 

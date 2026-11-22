@@ -143,10 +143,9 @@ für die Verbindung vom Modbus Proxy zum Regler ein:
    mit dem tatsächlichen Regler übereinstimmen.
 5. Speichern Sie optional den Zugriffsschlüssel. Er verbleibt im Pass-through-Modus und wird nicht
    in den Modbus-Datenverkehr eingefügt.
-6. Belassen Sie **Maximum connection age** für das beobachtete Verhalten des TROVIS-Reglers bei
-   `25 s`. Der Modbus Proxy erneuert die TCP-Verbindung dann vor der Sitzungsgrenze des Reglers von
-   ungefähr 30 Sekunden. Stellen Sie den Wert nur auf `0`, wenn der Regler unbegrenzt dauerhafte
-   Sitzungen unterstützt.
+6. Verwenden Sie `25 s` als Ausgangswert für **Maximum connection age**. Nach Ablauf erneuert
+   der Proxy die Verbindung vor der nächsten Abfragesequenz. Der Wert `0` deaktiviert die
+   geplante Erneuerung.
 7. Wählen Sie für den Zugriff durch mehrere Anwendungen zunächst **Standard (recommended)**.
    Das **Client sequence idle window** von `0,8 s` hält die Abfragen eines Clients über kurze
    Pausen hinweg zusammen. Der **Total timeout** von `16 s` umfasst auch die Wartezeit, während
@@ -322,6 +321,25 @@ Prüfen Sie aktives Profil, Host und Port des Reglers, Routing und Adaptermodus.
 einem USR-Adapter Socket A auf `TCP Server` mit Protokollmodus `None` und wählen Sie im Modbus Proxy
 `RTU-over-TCP`. Der Adapter muss rohe Modbus-RTU-Rahmen transportieren, statt sie in Modbus TCP
 umzuwandeln.
+
+### DNS und Netzwerkerreichbarkeit prüfen
+
+**Test connection** zeigt die Dauer der DNS-Auflösung, des TCP-Aufbaus und die erreichte
+IP-Adresse an. Ersetzen Sie `trovis-proxy-local` und `trovis.example.test` durch Ihren
+Containernamen und den Hostnamen des Adapters.
+
+```bash
+docker exec trovis-proxy-local nslookup trovis.example.test
+docker exec trovis-proxy-local dig trovis.example.test A
+docker exec trovis-proxy-local dig trovis.example.test AAAA
+docker exec trovis-proxy-local ping -c 3 trovis.example.test
+docker exec trovis-proxy-local traceroute trovis.example.test
+```
+
+Bei einem kurzen Hostnamen berücksichtigt `dig +search` die Suchdomänen des Containers.
+`ping` setzt voraus, dass der Container einen ICMP-Socket öffnen darf und das Ziel auf ICMP
+antwortet. Der Standardmodus von `traceroute` verwendet UDP und ist auf ICMP-Antworten entlang
+der Route angewiesen. Ob der Adapter-Port erreichbar ist, zeigt der TCP-Test im Web-UI.
 
 ### Anfragen liefern die Modbus-Ausnahme `0x0B`
 

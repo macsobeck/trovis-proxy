@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-ARG IMAGE_VERSION=1.2.0
+ARG IMAGE_VERSION=1.2.1
 
 LABEL org.opencontainers.image.title="TROVIS Modbus Proxy" \
       org.opencontainers.image.description="Multi-client Modbus Proxy for TROVIS-VIEW, TROVIS 55 Pro, Node-RED, and SAMSON heating controllers" \
@@ -12,6 +12,10 @@ LABEL org.opencontainers.image.title="TROVIS Modbus Proxy" \
 RUN set -eux; \
     apt-get update; \
     apt-get upgrade --yes; \
+    apt-get install --yes --no-install-recommends \
+        bind9-dnsutils \
+        iputils-ping \
+        traceroute; \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

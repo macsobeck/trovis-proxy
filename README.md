@@ -2,9 +2,26 @@
 
 English | [Deutsch](README.de.md)
 
-> **New in 1.2.0:** Pause controller forwarding safely from the web interface, choose between
-> Fast, Standard, Reliable, and Custom timing presets, and use improved DNS-name handling for
-> controller connections. See the [changelog](CHANGELOG.md#120---2026-11-21) for details.
+> **New in 1.2.1**
+>
+> - **Modbus response validation.** The proxy rejects mismatched responses and detects extra
+>   or late data on RTU-over-TCP connections. After an error, it re-establishes the connection
+>   before continuing.
+> - **Concurrent access and timing.** The total timeout includes time spent in the queue.
+>   Scheduled TCP reconnects happen between request sequences. The **Standard** preset now uses
+>   a **16 s total timeout** and a **0.8 s client idle window**.
+> - **DNS and connection setup.** Each controller profile can prefer IPv4, prefer IPv6, or follow
+>   the system resolver order. The proxy falls back to the other address family sooner and reuses
+>   recent DNS results when reconnecting.
+> - **Network diagnostics.** The web connection test shows DNS and TCP timings and the target IP
+>   it reaches. The Dockerfile adds `dig`, `nslookup`, `ping`, and `traceroute`.
+> - **TROVIS-VIEW note.** In the tested setup, the first read after restarting TROVIS-VIEW
+>   succeeds reliably. On the second read, TROVIS-VIEW uses a different request sequence and
+>   may display an error. The same behavior occurs with a direct connection to the USR adapter,
+>   independently of the proxy. See the [FAQ](#repeated-configuration-reads-in-trovis-view)
+>   for details.
+>
+> See the [changelog](CHANGELOG.md#121---2026-11-22) for details.
 
 The **TROVIS Modbus Proxy** is a self-hosted Modbus Proxy for reliable communication between
 **SAMSON TROVIS-VIEW** and TROVIS heating controllers, including the **SAMSON TROVIS 5573-1xxx**
@@ -177,8 +194,8 @@ Choose the [English installation guide](docs/gateway/installation.md) or the
 - FC05/06/0F/10 writes never retry after an ambiguous result.
 - Unknown and vendor-specific function codes are forwarded opaquely and are traceable.
 - All Modbus PDUs, including FC01 addresses, are forwarded unchanged.
-- TCP connections are renewed after 25 seconds by default, before the observed 30-second controller
-  session boundary; renewal occurs before a request and never retries an ambiguous write.
+- Scheduled TCP renewal is due after 25 seconds by default and runs at the next client sequence
+  boundary.
 - All requests to a controller are serialized and paced. Consecutive requests from one connected
   client retain short-lived affinity so another client cannot interleave a polling sequence.
 
@@ -209,6 +226,14 @@ persistent bind-mounted `./data` directory for controller profiles.
 
 Use `TCP Server` with protocol mode `None`, then select `RTU-over-TCP` in the Modbus Proxy profile.
 Do not enable the adapter's `ModbusTCP` conversion mode for TROVIS-VIEW communication.
+
+### Repeated configuration reads in TROVIS-VIEW
+
+In the tested setup, the first configuration read after restarting TROVIS-VIEW succeeds reliably.
+On the second read, TROVIS-VIEW uses a different sequence of requests and may display an error.
+The same behavior occurs when TROVIS-VIEW connects directly to the USR adapter, so it can occur
+independently of the Modbus Proxy. If this happens, restarting TROVIS-VIEW allows another
+successful read.
 
 ## Development assistance
 

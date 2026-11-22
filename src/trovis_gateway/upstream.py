@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from abc import ABC, abstractmethod
 from collections import deque
 from collections.abc import Callable
+from threading import Event
 from time import monotonic
 from typing import Any
 
@@ -21,8 +23,11 @@ from .protocol import (
     read_tcp_adu,
     validate_response_pdu,
 )
-from .tcp import open_tcp_connection
+from .tcp import TcpAddressCache, open_tcp_connection
 from .trace import GatewayTrace
+
+MIN_RTU_RECOVERY_QUIET_S = 0.05
+logger = logging.getLogger(__name__)
 
 
 class UpstreamRequestError(RuntimeError):
@@ -61,8 +66,9 @@ class UpstreamBackend(ABC):
 
 
 class ModbusTcpBackend(UpstreamBackend):
-    def __init__(self, profile: ControllerProfile) -> None:
+    def __init__(self, profile: ControllerProfile, address_cache: TcpAddressCache) -> None:
         super().__init__(profile)
+        self.address_cache = address_cache
         self.reader: asyncio.StreamReader | None = None
         self.writer: asyncio.StreamWriter | None = None
 
@@ -76,6 +82,8 @@ class ModbusTcpBackend(UpstreamBackend):
                 self.profile.host,
                 self.profile.port,
                 self.profile.timing.connect_timeout_s,
+                address_preference=self.profile.address_preference,
+                address_cache=self.address_cache,
             )
             if self.profile.timing.connect_settle_delay_s:
                 await asyncio.sleep(self.profile.timing.connect_settle_delay_s)
@@ -103,10 +111,11 @@ class ModbusTcpBackend(UpstreamBackend):
             )
             sent = True
             await self.writer.drain()
-            response = await asyncio.wait_for(
-                read_tcp_adu(self.reader),
-                self.profile.timing.response_timeout_s,
-            )
+            try:
+                async with asyncio.timeout(self.profile.timing.response_timeout_s):
+                    response = await read_tcp_adu(self.reader)
+            except TimeoutError as exc:
+                raise TimeoutError("Modbus TCP response exceeded the configured timeout") from exc
             response_pdu = response.pdu
             if response.transaction_id != transaction_id:
                 raise ModbusResponseError("upstream transaction ID mismatch")
@@ -125,10 +134,18 @@ class ModbusTcpBackend(UpstreamBackend):
 
 
 class RtuOverTcpBackend(UpstreamBackend):
-    def __init__(self, profile: ControllerProfile) -> None:
+    def __init__(
+        self,
+        profile: ControllerProfile,
+        address_cache: TcpAddressCache,
+        *,
+        resynchronize: bool = False,
+    ) -> None:
         super().__init__(profile)
+        self.address_cache = address_cache
         self.reader: asyncio.StreamReader | None = None
         self.writer: asyncio.StreamWriter | None = None
+        self.resynchronize = resynchronize
 
     @property
     def connected(self) -> bool:
@@ -140,12 +157,32 @@ class RtuOverTcpBackend(UpstreamBackend):
                 self.profile.host,
                 self.profile.port,
                 self.profile.timing.connect_timeout_s,
+                address_preference=self.profile.address_preference,
+                address_cache=self.address_cache,
             )
-            if self.profile.timing.connect_settle_delay_s:
-                await asyncio.sleep(self.profile.timing.connect_settle_delay_s)
+            settle_s = self.profile.timing.connect_settle_delay_s
+            if self.resynchronize:
+                await self._wait_for_quiet(max(settle_s, MIN_RTU_RECOVERY_QUIET_S))
+            elif settle_s:
+                await asyncio.sleep(settle_s)
         except Exception as exc:
             await self.close()
             raise UpstreamRequestError(str(exc), sent=False, timed_out=_timeout(exc)) from exc
+
+    async def _wait_for_quiet(self, quiet_s: float) -> None:
+        assert self.reader is not None
+        # No request has been sent on this connection. Discard any reply to a previous exchange
+        # and restart the quiet interval. The router enforces the overall request deadline.
+        while True:
+            try:
+                async with asyncio.timeout(quiet_s):
+                    data = await self.reader.read(4096)
+            except TimeoutError:
+                return
+            if not data:
+                raise ConnectionError("RTU connection closed during resynchronization")
+            # A continuously readable stream must still let the request deadline run.
+            await asyncio.sleep(0)
 
     async def close(self) -> None:
         writer, self.writer, self.reader = self.writer, None, None
@@ -163,6 +200,7 @@ class RtuOverTcpBackend(UpstreamBackend):
         sent = False
         response_pdu: bytes | None = None
         try:
+            await _check_rtu_stream_boundary(self.reader, before_request=True)
             self.writer.write(encode_rtu_adu(self.profile.upstream_unit_id, pdu))
             sent = True
             await self.writer.drain()
@@ -175,6 +213,7 @@ class RtuOverTcpBackend(UpstreamBackend):
             except ValueError as exc:
                 raise ModbusResponseError(str(exc)) from exc
             validate_response_pdu(pdu, response_pdu)
+            await _check_rtu_stream_boundary(self.reader, before_request=False)
             return response_pdu
         except Exception as exc:
             raise UpstreamRequestError(
@@ -190,6 +229,8 @@ class SerialRtuBackend(UpstreamBackend):
     def __init__(self, profile: ControllerProfile) -> None:
         super().__init__(profile)
         self.port: Any = None
+        self._opening: asyncio.Task[Any] | None = None
+        self._transacting: asyncio.Task[bytes] | None = None
 
     @property
     def connected(self) -> bool:
@@ -216,47 +257,71 @@ class SerialRtuBackend(UpstreamBackend):
             )
 
         try:
+            self._opening = asyncio.create_task(asyncio.to_thread(open_port))
             self.port = await asyncio.wait_for(
-                asyncio.to_thread(open_port),
+                asyncio.shield(self._opening),
                 self.profile.timing.connect_timeout_s,
             )
+            self._opening = None
             if self.profile.timing.connect_settle_delay_s:
                 await asyncio.sleep(self.profile.timing.connect_settle_delay_s)
         except Exception as exc:
-            await self.close()
             raise UpstreamRequestError(str(exc), sent=False, timed_out=_timeout(exc)) from exc
 
     async def close(self) -> None:
         port, self.port = self.port, None
+        opening, self._opening = self._opening, None
+        transacting, self._transacting = self._transacting, None
+        # A serial worker can outlive the caller's deadline. Close its port and
+        # join it before the router is allowed to open another serial exchange.
+        if opening is not None:
+            try:
+                port = await opening
+            except Exception:
+                pass
         if port is not None:
             try:
                 await asyncio.to_thread(port.close)
             except Exception:
                 pass
+        if transacting is not None:
+            try:
+                await transacting
+            except Exception:
+                pass
 
     async def exchange(self, transaction_id: int, pdu: bytes) -> bytes:
         del transaction_id
-        if self.port is None:
+        port = self.port
+        if port is None:
             raise UpstreamRequestError("upstream is not connected", sent=False)
         sent = False
         response_pdu: bytes | None = None
+        cancelled = Event()
 
         def transact() -> bytes:
             nonlocal sent
-            self.port.reset_input_buffer()
+            port.reset_input_buffer()
+            if cancelled.is_set():
+                raise OSError("serial exchange cancelled before send")
             sent = True
-            self.port.write(encode_rtu_adu(self.profile.upstream_unit_id, pdu))
-            self.port.flush()
-            return _read_rtu_serial(self.port)
+            port.write(encode_rtu_adu(self.profile.upstream_unit_id, pdu))
+            port.flush()
+            return _read_rtu_serial(port)
 
+        transacting = asyncio.create_task(asyncio.to_thread(transact))
+        self._transacting = transacting
         try:
-            frame = await asyncio.to_thread(transact)
+            frame = await asyncio.shield(transacting)
             try:
                 response_pdu = decode_rtu_adu(frame, self.profile.upstream_unit_id)
             except ValueError as exc:
                 raise ModbusResponseError(str(exc)) from exc
             validate_response_pdu(pdu, response_pdu)
             return response_pdu
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
         except Exception as exc:
             raise UpstreamRequestError(
                 str(exc),
@@ -265,6 +330,9 @@ class SerialRtuBackend(UpstreamBackend):
                 retryable=_transport_failure(exc),
                 response_pdu=response_pdu,
             ) from exc
+        finally:
+            if transacting.done():
+                self._transacting = None
 
 
 def _timeout(error: BaseException) -> bool:
@@ -284,26 +352,51 @@ def _transport_failure(error: BaseException) -> bool:
     )
 
 
+async def _check_rtu_stream_boundary(
+    reader: asyncio.StreamReader,
+    *,
+    before_request: bool,
+) -> None:
+    # Allow ready socket callbacks to deliver their bytes, then check without
+    # adding a fixed wait to every Modbus request.
+    await asyncio.sleep(0)
+    try:
+        async with asyncio.timeout(0):
+            data = await reader.read(1)
+    except TimeoutError:
+        return
+    if data:
+        phase = "before request" if before_request else "after response"
+        raise ModbusResponseError(f"unexpected RTU stream data {phase}")
+    if before_request:
+        raise ConnectionError("RTU connection closed before request")
+
+
 async def _read_rtu_response(
     reader: asyncio.StreamReader,
     timeout: float,
 ) -> bytes:
-    prefix = await asyncio.wait_for(reader.readexactly(2), timeout)
+    try:
+        async with asyncio.timeout(timeout):
+            return await _read_rtu_frame(reader)
+    except TimeoutError as exc:
+        raise TimeoutError("RTU response exceeded the configured timeout") from exc
+
+
+async def _read_rtu_frame(reader: asyncio.StreamReader) -> bytes:
+    prefix = await reader.readexactly(2)
     response_function = prefix[1]
     if response_function & 0x80:
-        return prefix + await asyncio.wait_for(reader.readexactly(3), timeout)
+        return prefix + await reader.readexactly(3)
     if response_function in {0x01, 0x02, 0x03, 0x04}:
-        byte_count = await asyncio.wait_for(reader.readexactly(1), timeout)
-        return prefix + byte_count + await asyncio.wait_for(
-            reader.readexactly(byte_count[0] + 2),
-            timeout,
-        )
+        byte_count = await reader.readexactly(1)
+        return prefix + byte_count + await reader.readexactly(byte_count[0] + 2)
     if response_function in {0x05, 0x06, 0x0F, 0x10}:
-        return prefix + await asyncio.wait_for(reader.readexactly(6), timeout)
+        return prefix + await reader.readexactly(6)
     chunks = [prefix]
     while True:
         try:
-            chunk = await asyncio.wait_for(reader.read(256), min(timeout, 0.05))
+            chunk = await asyncio.wait_for(reader.read(256), 0.05)
         except TimeoutError:
             break
         if not chunk:
@@ -334,11 +427,13 @@ def _read_rtu_serial(port: Any) -> bytes:
     return prefix + remainder
 
 
-def _backend(profile: ControllerProfile) -> UpstreamBackend:
+def _backend(
+    profile: ControllerProfile, address_cache: TcpAddressCache, *, resynchronize: bool
+) -> UpstreamBackend:
     if profile.transport == TransportType.MODBUS_TCP:
-        return ModbusTcpBackend(profile)
+        return ModbusTcpBackend(profile, address_cache)
     if profile.transport == TransportType.RTU_OVER_TCP:
-        return RtuOverTcpBackend(profile)
+        return RtuOverTcpBackend(profile, address_cache, resynchronize=resynchronize)
     return SerialRtuBackend(profile)
 
 
@@ -356,6 +451,9 @@ class UpstreamRouter:
         self._client_waiters: deque[int] = deque()
         self._client_waiter_ids: set[int] = set()
         self._backend: UpstreamBackend | None = None
+        self._address_cache = TcpAddressCache()
+        self._closing_backend: asyncio.Task[None] | None = None
+        self._rtu_recovery_targets: set[tuple[str, int]] = set()
         self._fingerprint: tuple[object, ...] | None = None
         self._last_request_at = 0.0
         self._last_failure_at = 0.0
@@ -363,12 +461,26 @@ class UpstreamRouter:
         self._ever_connected = False
 
     async def close(self) -> None:
-        if self._backend is not None:
-            await self._backend.close()
-        self._backend = None
+        self._begin_backend_close()
+        closing = self._closing_backend
+        if closing is not None:
+            await asyncio.shield(closing)
+            if self._closing_backend is closing:
+                self._closing_backend = None
+
+    def _begin_backend_close(self) -> None:
+        backend, self._backend = self._backend, None
+        if backend is not None:
+            self._closing_backend = asyncio.create_task(backend.close())
         self._fingerprint = None
         self._connected_at = 0.0
         self.metrics.set("upstream_connected", False)
+
+    def _fail_backend(self, profile: ControllerProfile) -> None:
+        self._last_failure_at = monotonic()
+        if profile.transport == TransportType.RTU_OVER_TCP:
+            self._rtu_recovery_targets.add((profile.host, profile.port))
+        self._begin_backend_close()
 
     async def request(
         self,
@@ -389,49 +501,53 @@ class UpstreamRouter:
         self.metrics.increment("queue_depth")
         turn_acquired = False
         lock_acquired = False
+        deadline = asyncio.get_running_loop().time() + profile.timing.total_request_timeout_s
         try:
-            try:
-                await self._acquire_client_turn(
-                    client_id,
-                    profile.timing.client_burst_idle_s,
-                )
-                turn_acquired = True
-                await self._lock.acquire()
-                lock_acquired = True
-            finally:
-                self.metrics.increment("queue_depth", -1)
-            if forwarding_allowed is not None and not forwarding_allowed():
-                raise UpstreamRequestError(
-                    "forwarding is disabled",
-                    sent=False,
-                    retryable=False,
-                )
-            try:
-                return await asyncio.wait_for(
-                    self._request_locked(
-                        transaction_id=transaction_id,
-                        downstream_unit_id=downstream_unit_id,
-                        pdu=pdu,
-                        profile=profile,
-                    ),
-                    profile.timing.total_request_timeout_s,
-                )
-            except TimeoutError as exc:
-                self.metrics.increment("timeouts")
-                await self.close()
-                self.trace.emit(
-                    "UPSTREAM RX",
+            async with asyncio.timeout_at(deadline):
+                try:
+                    continues_sequence = await self._acquire_client_turn(
+                        client_id,
+                        profile.timing.client_burst_idle_s,
+                    )
+                    turn_acquired = True
+                    await self._lock.acquire()
+                    lock_acquired = True
+                finally:
+                    self.metrics.increment("queue_depth", -1)
+                if forwarding_allowed is not None and not forwarding_allowed():
+                    raise UpstreamRequestError(
+                        "forwarding is disabled",
+                        sent=False,
+                        retryable=False,
+                    )
+                return await self._request_locked(
+                    client_id=client_id,
                     transaction_id=transaction_id,
                     downstream_unit_id=downstream_unit_id,
-                    upstream_unit_id=profile.upstream_unit_id,
                     pdu=pdu,
-                    exception=exc,
+                    profile=profile,
+                    deadline=deadline,
+                    continues_sequence=continues_sequence,
                 )
-                raise UpstreamRequestError(
-                    "total request timeout",
-                    sent=True,
-                    timed_out=True,
-                ) from exc
+        except TimeoutError as exc:
+            self.metrics.increment("timeouts")
+            stage = "during upstream processing" if lock_acquired else "in the request queue"
+            error = UpstreamRequestError(
+                f"total request timeout {stage}",
+                sent=lock_acquired,
+                timed_out=True,
+                retryable=False,
+            )
+            self.trace.emit(
+                "UPSTREAM RX" if lock_acquired else "QUEUE TIMEOUT",
+                client_id=client_id,
+                transaction_id=transaction_id,
+                downstream_unit_id=downstream_unit_id,
+                upstream_unit_id=profile.upstream_unit_id,
+                pdu=pdu,
+                exception=error,
+            )
+            raise error from exc
         finally:
             if lock_acquired:
                 self._lock.release()
@@ -448,7 +564,8 @@ class UpstreamRouter:
                 self._client_owner_last_completed_at = 0.0
             self._client_condition.notify_all()
 
-    async def _acquire_client_turn(self, client_id: int, idle_s: float) -> None:
+    async def _acquire_client_turn(self, client_id: int, idle_s: float) -> bool:
+        """Acquire the turn and report whether the client is extending its current sequence."""
         async with self._client_condition:
             if self._client_owner != client_id:
                 self._append_waiter(client_id)
@@ -470,7 +587,7 @@ class UpstreamRouter:
 
                     if self._client_owner == client_id:
                         self._client_owner_active = True
-                        return
+                        return True
 
                     if self._client_owner is None:
                         self._append_waiter(client_id)
@@ -479,7 +596,7 @@ class UpstreamRouter:
                             self._client_waiter_ids.remove(client_id)
                             self._client_owner = client_id
                             self._client_owner_active = True
-                            return
+                            return False
 
                     timeout: float | None = None
                     if self._client_owner is not None and not self._client_owner_active:
@@ -523,22 +640,29 @@ class UpstreamRouter:
     async def _request_locked(
         self,
         *,
+        client_id: int,
         transaction_id: int,
         downstream_unit_id: int,
         pdu: bytes,
         profile: ControllerProfile,
+        deadline: float,
+        continues_sequence: bool,
     ) -> bytes:
         kind = classify_pdu(pdu)
         max_retries = profile.retry.read_retries if kind == PduKind.READ else 0
         if kind == PduKind.WRITE:
             max_retries = profile.retry.write_retries
         for attempt in range(max_retries + 1):
+            started: float | None = None
             try:
-                await self._ensure_backend(profile)
+                await self._ensure_backend(profile, continues_sequence=continues_sequence)
                 await self._pace(profile)
+                if asyncio.get_running_loop().time() >= deadline:
+                    raise TimeoutError
                 started = monotonic()
                 self.trace.emit(
                     "UPSTREAM TX",
+                    client_id=client_id,
                     transaction_id=transaction_id,
                     downstream_unit_id=downstream_unit_id,
                     upstream_unit_id=profile.upstream_unit_id,
@@ -546,14 +670,20 @@ class UpstreamRouter:
                     retry=attempt,
                 )
                 assert self._backend is not None
-                response = await self._backend.exchange(transaction_id, pdu)
+                try:
+                    response = await self._backend.exchange(transaction_id, pdu)
+                except asyncio.CancelledError:
+                    self._fail_backend(profile)
+                    raise
                 self._last_request_at = monotonic()
                 self.trace.emit(
                     "UPSTREAM RX",
+                    client_id=client_id,
                     transaction_id=transaction_id,
                     downstream_unit_id=downstream_unit_id,
                     upstream_unit_id=profile.upstream_unit_id,
-                    pdu=response,
+                    pdu=pdu,
+                    response_pdu=response,
                     duration_ms=(monotonic() - started) * 1000,
                     retry=attempt,
                 )
@@ -563,14 +693,17 @@ class UpstreamRouter:
                     self.metrics.increment("timeouts")
                 self.trace.emit(
                     "UPSTREAM RX",
+                    client_id=client_id,
                     transaction_id=transaction_id,
                     downstream_unit_id=downstream_unit_id,
                     upstream_unit_id=profile.upstream_unit_id,
-                    pdu=exc.response_pdu if exc.response_pdu is not None else pdu,
+                    pdu=pdu,
+                    response_pdu=exc.response_pdu,
+                    duration_ms=(monotonic() - started) * 1000 if started is not None else None,
                     retry=attempt,
                     exception=exc,
                 )
-                self._last_failure_at = monotonic()
+                self._fail_backend(profile)
                 await self.close()
                 can_retry_read = (
                     kind == PduKind.READ and exc.retryable and attempt < max_retries
@@ -586,32 +719,46 @@ class UpstreamRouter:
                 self.metrics.increment("retries")
         raise AssertionError("unreachable retry loop")
 
-    async def _ensure_backend(self, profile: ControllerProfile) -> None:
+    async def _ensure_backend(
+        self, profile: ControllerProfile, *, continues_sequence: bool
+    ) -> None:
         fingerprint = profile.connection_fingerprint()
+        rtu_target = (profile.host, profile.port)
+        resynchronize = rtu_target in self._rtu_recovery_targets
         if self._fingerprint != fingerprint:
             await self.close()
-            self._backend = _backend(profile)
+            self._backend = _backend(profile, self._address_cache, resynchronize=resynchronize)
             self._fingerprint = fingerprint
         assert self._backend is not None
         if self._backend.connected:
             max_age = profile.timing.max_connection_age_s
+            age = monotonic() - self._connected_at
             connection_expired = (
                 profile.transport in {TransportType.MODBUS_TCP, TransportType.RTU_OVER_TCP}
                 and max_age > 0
                 and self._connected_at > 0
-                and monotonic() - self._connected_at >= max_age
+                and age >= max_age
             )
-            if not connection_expired:
+            if not connection_expired or continues_sequence:
                 return
+            logger.info(
+                "Renewing upstream TCP connection between client sequences (age %.1f s)", age
+            )
             await self.close()
             if profile.timing.reconnect_delay_s:
                 await asyncio.sleep(profile.timing.reconnect_delay_s)
-            self._backend = _backend(profile)
+            self._backend = _backend(profile, self._address_cache, resynchronize=resynchronize)
             self._fingerprint = fingerprint
         since_failure = monotonic() - self._last_failure_at
         if self._last_failure_at and since_failure < profile.timing.reconnect_delay_s:
             await asyncio.sleep(profile.timing.reconnect_delay_s - since_failure)
-        await self._backend.connect()
+        try:
+            await self._backend.connect()
+        except asyncio.CancelledError:
+            self._fail_backend(profile)
+            raise
+        if profile.transport == TransportType.RTU_OVER_TCP:
+            self._rtu_recovery_targets.discard(rtu_target)
         self._connected_at = monotonic()
         if self._ever_connected:
             self.metrics.increment("reconnects")

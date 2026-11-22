@@ -108,7 +108,18 @@
               </div>
               <div class="parameter-row" id="host-field">
                 <label class="parameter-label" for="host">Host</label>
-                <div class="parameter-value"><input id="host" placeholder="192.168.1.40"><small>DNS addresses follow the system resolver order. If IPv6 is returned first but is unavailable, the proxy tries IPv4 after the IPv6 connection timeout.</small></div>
+                <div class="parameter-value"><input id="host" placeholder="192.168.1.40"></div>
+              </div>
+              <div class="parameter-row" id="address-preference-field">
+                <label class="parameter-label" for="address-preference">IP address preference</label>
+                <div class="parameter-value">
+                  <select id="address-preference">
+                    <option value="system">System order (default)</option>
+                    <option value="ipv4">Prefer IPv4</option>
+                    <option value="ipv6">Prefer IPv6</option>
+                  </select>
+                  <small>For DNS names. If the first address family is unavailable, the proxy can try the other.</small>
+                </div>
               </div>
               <div class="parameter-row" id="port-field">
                 <label class="parameter-label" for="port">Port</label>
@@ -175,12 +186,12 @@
               </div>
               <div class="parameter-row"><label class="parameter-label" for="connect-timeout">Connection timeout</label><div class="parameter-value input-with-unit"><input id="connect-timeout" type="number" min="0.1" max="120" step="0.1"><span>s</span></div></div>
               <div class="parameter-row"><label class="parameter-label" for="response-timeout">Response timeout</label><div class="parameter-value input-with-unit"><input id="response-timeout" type="number" min="0.1" max="120" step="0.1"><span>s</span></div></div>
-              <div class="parameter-row"><label class="parameter-label" for="total-timeout">Total timeout</label><div class="parameter-value input-with-unit"><input id="total-timeout" type="number" min="0.1" max="300" step="0.1"><span>s</span></div></div>
+              <div class="parameter-row"><label class="parameter-label" for="total-timeout">Total timeout</label><div class="parameter-value input-with-unit"><input id="total-timeout" type="number" min="0.1" max="300" step="0.1"><span>s</span><small>Includes waiting in the queue, controller communication, and retries.</small></div></div>
               <div class="parameter-row"><label class="parameter-label" for="minimum-interval">Minimum interval</label><div class="parameter-value input-with-unit"><input id="minimum-interval" type="number" min="0" max="30" step="0.01"><span>s</span></div></div>
               <div class="parameter-row"><label class="parameter-label" for="client-burst-idle">Client sequence idle window</label><div class="parameter-value input-with-unit"><input id="client-burst-idle" type="number" min="0" max="10" step="0.01"><span>s</span><small>Keeps consecutive requests from one client together; 0 disables client affinity.</small></div></div>
               <div class="parameter-row"><label class="parameter-label" for="settle-delay">Connection settle delay</label><div class="parameter-value input-with-unit"><input id="settle-delay" type="number" min="0" max="30" step="0.01"><span>s</span></div></div>
               <div class="parameter-row"><label class="parameter-label" for="reconnect-delay">Reconnect delay</label><div class="parameter-value input-with-unit"><input id="reconnect-delay" type="number" min="0" max="120" step="0.1"><span>s</span></div></div>
-              <div class="parameter-row"><label class="parameter-label" for="max-connection-age">Maximum connection age</label><div class="parameter-value input-with-unit"><input id="max-connection-age" type="number" min="0" max="86400" step="0.1"><span>s</span><small>25 s avoids the observed 30 s boundary; 0 disables proactive reconnection.</small></div></div>
+              <div class="parameter-row"><label class="parameter-label" for="max-connection-age">Maximum connection age</label><div class="parameter-value input-with-unit"><input id="max-connection-age" type="number" min="0" max="86400" step="0.1"><span>s</span><small>After this age, the proxy renews the connection before the next client sequence. 0 disables scheduled renewal.</small></div></div>
             </div>
           </section>
 
@@ -200,7 +211,7 @@
       </div>
     </section>
   </main>
-  <footer class="site-footer"><span id="release-version">Release 1.2.0</span><span aria-hidden="true"> · </span>Design by macsobeck</footer>
+  <footer class="site-footer"><span id="release-version">Release 1.2.1</span><span aria-hidden="true"> · </span>Design by macsobeck</footer>
   <script src="/app.js" defer></script>
 </body>
 </html>
