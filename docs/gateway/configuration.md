@@ -24,8 +24,11 @@ not change retry settings. Editing any timing field selects **Custom** automatic
 | Preset | Connect | Response | Total | Minimum interval | Client idle | Settle | Reconnect | Max age |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | Fast | 2 s | 1 s | 5 s | 0.05 s | 0.10 s | 0.10 s | 0.50 s | 25 s |
-| Standard | 3 s | 2 s | 8 s | 0.10 s | 0.25 s | 0.25 s | 1.00 s | 25 s |
+| Standard | 3 s | 2 s | 16 s | 0.10 s | 0.80 s | 0.25 s | 1.00 s | 25 s |
 | Reliable | 5 s | 4 s | 20 s | 0.20 s | 1.00 s | 0.50 s | 2.00 s | 25 s |
+
+New profiles start with Standard. To apply the current Standard values to an existing profile,
+select **Standard (recommended)** and save.
 
 Each profile contains transport, TCP endpoint or serial parameters, upstream Modbus Unit ID,
 timeouts, pacing, retry limits, and an optional access key. The API returns only a boolean saying
@@ -44,7 +47,7 @@ first but is unavailable, the proxy waits for that connection attempt to fail or
 **Connection timeout**, then tries the IPv4 address. The resulting fallback delay is expected and does
 not affect requests after the persistent upstream connection has been established.
 
-The **Client sequence idle window** defaults to `0.25` seconds. After a request completes, the same
+The **Client sequence idle window** defaults to `0.8` seconds. After a request completes, the same
 downstream TCP connection keeps controller affinity for this long. Consecutive requests from
 TROVIS-VIEW, TROVIS 55 Pro, or Node-RED therefore stay together instead of being interleaved with
 another client's polling sequence. Waiting clients are served in arrival order once the active

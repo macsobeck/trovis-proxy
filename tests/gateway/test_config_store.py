@@ -109,7 +109,8 @@ class ConfigStoreTests(unittest.TestCase):
             persisted = json.loads(path.read_text(encoding="utf-8"))["profiles"][0]
 
             self.assertEqual(loaded.active_profile().timing.max_connection_age_s, 25)
-            self.assertEqual(loaded.active_profile().timing.client_burst_idle_s, 0.25)
+            self.assertEqual(loaded.active_profile().timing.client_burst_idle_s, 0.8)
+            self.assertEqual(loaded.active_profile().timing.total_request_timeout_s, 16)
             self.assertNotIn("compatibility", ControllerProfile.model_fields)
             self.assertNotIn("compatibility", public)
             self.assertNotIn("compatibility", persisted)

@@ -144,10 +144,9 @@ Enter the settings for the connection from the Modbus Proxy to the controller:
 6. Keep **Maximum connection age** at `25 s` for the observed TROVIS controller behavior. The
    Modbus Proxy then renews the TCP connection before the controller's approximately 30-second session
    boundary. Set it to `0` only when the controller supports unrestricted persistent sessions.
-7. Keep **Client sequence idle window** at `0.25 s` when more than one application accesses the
-   Modbus Proxy. This prevents Node-RED requests from being inserted into a TROVIS-VIEW or TROVIS 55 Pro
-   polling sequence. Increase it slightly only if a client pauses longer between requests; `0`
-   disables the protection.
+7. Start with **Standard (recommended)** for shared access. Its **Client sequence idle window**
+   of `0.8 s` keeps consecutive requests from one client together across short pauses. Its
+   **Total timeout** of `16 s` includes time waiting behind another client's sequence.
 8. Review the remaining timeouts, request spacing, and retry values.
 9. Select **Save**.
 10. Select **Activate** if this is not already the active profile.

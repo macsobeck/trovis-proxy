@@ -7,6 +7,11 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- The Standard timing preset allows 16 seconds per request including queue time and keeps
+  requests from the same client together across pauses of up to 0.8 seconds.
+
 ### Fixed
 
 - Reject upstream responses whose function code, byte count, or write echo cannot belong to the

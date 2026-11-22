@@ -1,5 +1,5 @@
 const defaults = {
-  timing: { connect_timeout_s: 3, response_timeout_s: 2, total_request_timeout_s: 8, minimum_request_interval_s: .1, client_burst_idle_s: .25, connect_settle_delay_s: .25, reconnect_delay_s: 1, max_connection_age_s: 25 },
+  timing: { connect_timeout_s: 3, response_timeout_s: 2, total_request_timeout_s: 16, minimum_request_interval_s: .1, client_burst_idle_s: .8, connect_settle_delay_s: .25, reconnect_delay_s: 1, max_connection_age_s: 25 },
   retry: { read_retries: 2, write_retries: 0 },
   serial: { device: "", baudrate: 19200, data_bits: 8, parity: "N", stop_bits: 1 }
 };

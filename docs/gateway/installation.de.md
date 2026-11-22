@@ -147,10 +147,10 @@ für die Verbindung vom Modbus Proxy zum Regler ein:
    `25 s`. Der Modbus Proxy erneuert die TCP-Verbindung dann vor der Sitzungsgrenze des Reglers von
    ungefähr 30 Sekunden. Stellen Sie den Wert nur auf `0`, wenn der Regler unbegrenzt dauerhafte
    Sitzungen unterstützt.
-7. Belassen Sie **Client sequence idle window** bei `0.25 s`, wenn mehrere Anwendungen auf den
-   Modbus Proxy zugreifen. Dadurch werden Node-RED-Anfragen nicht in eine Abfragesequenz von
-   TROVIS-VIEW oder TROVIS 55 Pro eingefügt. Erhöhen Sie den Wert nur geringfügig, wenn ein Client
-   längere Pausen zwischen Anfragen einlegt. Der Wert `0` deaktiviert diesen Schutz.
+7. Wählen Sie für den Zugriff durch mehrere Anwendungen zunächst **Standard (recommended)**.
+   Das **Client sequence idle window** von `0,8 s` hält die Abfragen eines Clients über kurze
+   Pausen hinweg zusammen. Der **Total timeout** von `16 s` umfasst auch die Wartezeit, während
+   der Proxy die Abfragen eines anderen Clients abarbeitet.
 8. Prüfen Sie die übrigen Zeitüberschreitungen, Anfrageabstände und Wiederholungswerte.
 9. Wählen Sie **Save**.
 10. Wählen Sie **Activate**, wenn dieses Profil noch nicht aktiv ist.
