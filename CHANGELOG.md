@@ -44,7 +44,7 @@ semantic versioning.
 
 - Documented that a second configuration read in TROVIS-VIEW can fail even with a direct USR
   adapter connection. Restarting TROVIS-VIEW allows another successful read in the tested setup.
-  See the [README note on repeated configuration reads](README.md#repeated-configuration-reads-in-trovis-view).
+  See the [README note on repeated configuration reads](README.md#why-can-a-second-read-in-trovis-view-fail).
 
 ## [1.2.0] - 2026-11-21
 

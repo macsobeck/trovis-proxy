@@ -24,7 +24,7 @@ Serial RTU.
 > - **TROVIS-VIEW note.** In the tested setup, the first read after restarting TROVIS-VIEW
 >   succeeds reliably. On the second read, TROVIS-VIEW uses a different request sequence and
 >   may display an error. The same behavior occurs with a direct connection to the USR adapter,
->   independently of the proxy. See the [FAQ](#repeated-configuration-reads-in-trovis-view)
+>   independently of the proxy. See the [FAQ](#why-can-a-second-read-in-trovis-view-fail)
 >   for details.
 >
 > See the [changelog](CHANGELOG.md#121---2026-11-22) for details.
@@ -207,34 +207,46 @@ See [Modbus Proxy architecture](docs/gateway/architecture.md),
 
 ## Frequently asked questions
 
-### Does this Modbus Proxy replace TROVIS-VIEW?
+### Which applications can I connect to the proxy?
 
-No. TROVIS-VIEW remains the configuration application. The Modbus Proxy provides a reliable
-network path between TROVIS-VIEW and the heating controller.
+TROVIS-VIEW, Home Assistant, Node-RED, TROVIS 55 Pro, and other applications can access the proxy
+through **Modbus TCP** when they support this connection mode.
 
-### Which TROVIS controllers are supported?
+### How do I connect an application to the proxy?
 
-The Modbus Proxy core is controller-neutral and forwards Modbus PDUs transparently. The documented
-deployment has been validated with a SAMSON TROVIS 5573-1xxx controller. Other controllers can be
-used when they expose a compatible Modbus TCP, RTU-over-TCP, or Serial RTU interface.
+Select **Modbus TCP** in the application and enter the proxy host's IP address or DNS name and port
+**`7112`**. Choose the transport from the proxy to the controller separately in the controller
+profile.
 
-### Can the TROVIS Modbus Proxy run on a Synology NAS?
+### Can multiple applications access the same controller at the same time?
 
-Yes. The Docker Compose setup supports NAS deployment, UID/GID mapping, automatic restarts, and a
-persistent bind-mounted `./data` directory for controller profiles.
+Yes. The proxy processes requests to the controller one at a time. It keeps related requests from
+one client together within a configurable time window. Home Assistant or Node-RED requests may
+briefly wait while TROVIS-VIEW reads the configuration.
 
-### Which mode should a USR Ethernet adapter use?
+### Which heating controllers are supported?
 
-Use `TCP Server` with protocol mode `None`, then select `RTU-over-TCP` in the Modbus Proxy profile.
-Do not enable the adapter's `ModbusTCP` conversion mode for TROVIS-VIEW communication.
+The documented setup was tested with a **SAMSON TROVIS 5573-1xxx**. Other controllers can be used
+when they support communication over **Modbus TCP**, **RTU-over-TCP**, or **Serial RTU**.
 
-### Repeated configuration reads in TROVIS-VIEW
+### How do I configure a USR serial-to-Ethernet adapter?
 
-In the tested setup, the first configuration read after restarting TROVIS-VIEW succeeds reliably.
-On the second read, TROVIS-VIEW uses a different sequence of requests and may display an error.
-The same behavior occurs when TROVIS-VIEW connects directly to the USR adapter, so it can occur
-independently of the Modbus Proxy. If this happens, restarting TROVIS-VIEW allows another
-successful read.
+Set Socket A on the adapter to **`TCP Server`** and its protocol mode to **`None`**. Select
+**`RTU-over-TCP`** in the proxy's controller profile. Your applications connect to the proxy over
+**Modbus TCP**.
+
+### Can I run the proxy on a NAS such as Synology?
+
+Yes. On a NAS such as Synology with a container manager, you can run the proxy with Docker Compose.
+Controller profiles are stored in the mounted data directory and remain available after a
+container update.
+
+### Why can a second read in TROVIS-VIEW fail?
+
+In the tested setup, the first read after restarting TROVIS-VIEW succeeds reliably. On the second
+read, TROVIS-VIEW uses a different request sequence and may display an error. The same behavior
+occurs with a direct connection to the USR adapter, independently of the proxy. Restarting
+TROVIS-VIEW allows another read.
 
 ## Development assistance
 

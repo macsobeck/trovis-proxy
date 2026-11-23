@@ -24,7 +24,7 @@ mit dem Regler.
 >   Neustart von TROVIS-VIEW zuverlässig. Beim zweiten Auslesen verwendet TROVIS-VIEW eine andere
 >   Abfolge von Abfragen. Dabei kann eine Fehlermeldung erscheinen. Das Verhalten tritt auch bei
 >   direkter Verbindung zum USR-Adapter auf und ist damit unabhängig vom Proxy.
->   Näheres siehe [FAQ](#hinweis-zum-wiederholten-auslesen-mit-trovis-view).
+>   Näheres siehe [FAQ](#warum-kann-das-zweite-auslesen-in-trovis-view-fehlschlagen).
 >
 > Einzelheiten stehen im [Changelog](CHANGELOG.md#121---2026-11-22).
 
@@ -219,36 +219,48 @@ Weitere Informationen finden Sie in der englischen Dokumentation zu
 
 ## Häufig gestellte Fragen
 
-### Ersetzt dieser Modbus Proxy TROVIS-VIEW?
+### Welche Anwendungen kann ich mit dem Proxy verbinden?
 
-Nein. TROVIS-VIEW bleibt die Konfigurationsanwendung. Der Modbus Proxy stellt einen zuverlässigen
-Netzwerkpfad zwischen TROVIS-VIEW und dem Heizungsregler bereit.
+TROVIS-VIEW, Home Assistant, Node-RED, TROVIS 55 Pro und weitere Anwendungen können über
+**Modbus TCP** auf den Proxy zugreifen, sofern sie diesen Verbindungsmodus unterstützen.
 
-### Welche TROVIS-Regler werden unterstützt?
+### Wie verbinde ich eine Anwendung mit dem Proxy?
 
-Der Kern des Modbus Proxy ist reglerneutral und leitet Modbus-PDUs transparent weiter. Die
-dokumentierte Bereitstellung wurde mit einem Regler SAMSON TROVIS 5573-1xxx validiert. Andere
-Regler können verwendet werden, wenn sie eine kompatible Schnittstelle für Modbus TCP,
-RTU-over-TCP oder Serial RTU bereitstellen.
+Wählen Sie in der Anwendung **Modbus TCP** und geben Sie die IP-Adresse oder den DNS-Namen des
+Proxy-Hosts sowie den Port **`7112`** ein. Den Transport vom Proxy zum Regler legen Sie separat
+im Reglerprofil fest.
 
-### Kann der TROVIS Modbus Proxy auf einem Synology NAS betrieben werden?
+### Können mehrere Anwendungen gleichzeitig auf denselben Regler zugreifen?
 
-Ja. Die Docker-Compose-Konfiguration unterstützt den NAS-Betrieb, UID/GID-Zuordnung, automatische
-Neustarts und ein dauerhaft eingebundenes Verzeichnis `./data` für die Reglerprofile.
+Ja. Der Proxy arbeitet die Anfragen an den Regler nacheinander ab. Er hält zusammengehörige
+Abfragen eines Clients innerhalb eines einstellbaren Zeitfensters zusammen. Während TROVIS-VIEW
+eine Konfiguration ausliest, können Abfragen von Home Assistant oder Node-RED deshalb kurz warten.
 
-### Welchen Modus soll ein USR-Ethernet-Adapter verwenden?
+### Welche Heizungsregler werden unterstützt?
 
-Verwenden Sie `TCP Server` mit dem Protokollmodus `None` und wählen Sie anschließend im Profil des
-Modbus Proxy `RTU-over-TCP`. Aktivieren Sie für die TROVIS-VIEW-Kommunikation nicht den
-Konvertierungsmodus `ModbusTCP` des Adapters.
+Der dokumentierte Aufbau wurde mit einem **SAMSON TROVIS 5573-1xxx** getestet. Auch andere Regler
+kommen infrage, wenn die Kommunikation über **Modbus TCP**, **RTU-over-TCP** oder **Serial RTU**
+möglich ist.
 
-### Hinweis zum wiederholten Auslesen mit TROVIS-VIEW
+### Wie richte ich einen seriellen USR-Ethernet-Adapter ein?
+
+Stellen Sie Socket A des Adapters auf **`TCP Server`** und den Protokollmodus auf **`None`**.
+Wählen Sie im Reglerprofil des Proxys **`RTU-over-TCP`**. Ihre Anwendungen verbinden sich per
+**Modbus TCP** mit dem Proxy.
+
+### Kann ich den Proxy auf einem NAS (z.B. von Synology) betreiben?
+
+Ja. Auf einem NAS (z.B. von Synology) mit einem Container Manager können Sie den Proxy per Docker
+Compose betreiben. Die Reglerprofile werden im eingebundenen Datenverzeichnis gespeichert und stehen
+auch nach einem Container-Update zur Verfügung.
+
+### Warum kann das zweite Auslesen in TROVIS-VIEW fehlschlagen?
 
 Im getesteten Aufbau funktioniert das erste Auslesen nach einem Neustart von TROVIS-VIEW
 zuverlässig. Beim zweiten Auslesen verwendet TROVIS-VIEW eine andere Abfolge von Abfragen. Dabei
-kann eine Fehlermeldung erscheinen. Das Verhalten tritt auch bei einer direkten Verbindung zum
-USR-Adapter auf und ist damit unabhängig vom Proxy. Tritt der Fehler auf, ermöglicht ein Neustart
-von TROVIS-VIEW einen weiteren erfolgreichen Auslesevorgang.
+kann eine Fehlermeldung auftreten. Das Verhalten zeigt sich auch bei direkter Verbindung zum
+USR-Adapter und ist damit unabhängig vom Proxy. Ein Neustart von TROVIS-VIEW ermöglicht einen
+weiteren Auslesevorgang.
 
 ## Entwicklungsunterstützung
 
