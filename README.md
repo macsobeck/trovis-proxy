@@ -1,6 +1,12 @@
-# TROVIS Modbus Proxy for TROVIS-VIEW and SAMSON Controllers
+# TROVIS Modbus Proxy for Smart Home Applications accessing SAMSON Controllers
 
 English | [Deutsch](README.de.md)
+
+The TROVIS Modbus Proxy is a self-hosted Modbus Proxy for reliable communication between Smart
+Home Applications (like e.g. SAMSON TROVIS-VIEW, Home Assistant, node-red etc.) and TROVIS heating
+controllers, including the SAMSON TROVIS 5573-1xxx series. It provides a stable Modbus TCP endpoint
+for Smart Home Applications and connects to the controller through Modbus TCP, RTU-over-TCP, or
+Serial RTU.
 
 > **New in 1.2.1**
 >
@@ -23,13 +29,8 @@ English | [Deutsch](README.de.md)
 >
 > See the [changelog](CHANGELOG.md#121---2026-11-22) for details.
 
-The **TROVIS Modbus Proxy** is a self-hosted Modbus Proxy for reliable communication between
-**SAMSON TROVIS-VIEW** and TROVIS heating controllers, including the **SAMSON TROVIS 5573-1xxx**
-series. It provides a stable Modbus TCP endpoint for TROVIS-VIEW and connects to the controller
-through Modbus TCP, RTU-over-TCP, or Serial RTU.
-
 ```text
-TROVIS-VIEW → Modbus TCP → TROVIS Modbus Proxy → Modbus TCP / RTU-over-TCP / Serial RTU → controller
+Client application → Modbus TCP → TROVIS Modbus Proxy → Modbus TCP / RTU-over-TCP / Serial RTU → controller
 ```
 
 The Modbus Proxy forwards Modbus PDUs unchanged and has no controller- or firmware-specific
@@ -38,7 +39,7 @@ read-only integration and research harness; it is not part of the Modbus Proxy c
 
 ## Key features
 
-- Reliable TROVIS-VIEW access through a stable Modbus TCP listener on port `7112`.
+- Stable Modbus TCP access for TROVIS-VIEW, Home Assistant, Node-RED, and other clients on port `7112`.
 - Stable controller firmware upgrades through TROVIS-VIEW using the same reliable proxy connection.
 - Controller connections via Modbus TCP, transparent RTU-over-TCP, or Serial RTU.
 - Docker Compose deployment for Linux servers and NAS systems such as Synology.
@@ -84,8 +85,8 @@ This interoperability problem was the original motivation for developing the TRO
 The project has since evolved into a more general communication layer with several additional
 strengths:
 
-- **Coordinated multi-client access:** TROVIS-VIEW, Node-RED, TROVIS 55 Pro, and other Modbus TCP
-  clients can access the same controller through one Modbus Proxy. Client request sequences are
+- **Coordinated multi-client access:** TROVIS-VIEW, Home Assistant, Node-RED, TROVIS 55 Pro, and
+  other Modbus TCP clients can access the same controller through one Modbus Proxy. Client request sequences are
   queued and kept together to prevent competing applications from causing failed controller reads.
 - **Stable firmware upgrades:** With the adapter in transparent `None` mode and the Modbus Proxy
   using `RTU-over-TCP`, serial Modbus RTU frames are transported without being decoded or rewritten
@@ -113,9 +114,9 @@ strengths:
 
 ### Modbus Proxy status
 
-![TROVIS Modbus Proxy status dashboard for TROVIS-VIEW and a SAMSON controller](docs/images/gateway-status.png)
+![TROVIS Modbus Proxy status dashboard for Modbus TCP clients and a SAMSON controller](docs/images/gateway-status.png)
 
-*Status overview for the TROVIS-VIEW listener and the active upstream controller connection.*
+*Status overview for the Modbus TCP listener and the active controller connection.*
 
 ### Controller connection
 

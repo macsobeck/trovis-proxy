@@ -61,9 +61,8 @@ do not recognize the new per-profile `address_preference` field.
 
 The **Client sequence idle window** defaults to `0.8` seconds. After a request completes, the same
 downstream TCP connection keeps controller affinity for this long. Consecutive requests from
-TROVIS-VIEW, TROVIS 55 Pro, or Node-RED therefore stay together instead of being interleaved with
-another client's polling sequence. Waiting clients are served in arrival order once the active
-client is idle. Set the value to `0` only to restore request-by-request arbitration. Clients must
+the same client, such as TROVIS-VIEW, Home Assistant, Node-RED, or TROVIS 55 Pro, stay together
+during this window. Waiting clients are served in arrival order once the active client is idle. Set the value to `0` only to restore request-by-request arbitration. Clients must
 allow enough response time for a polling sequence already in progress.
 
 **Total timeout** starts when the proxy accepts a complete client request. The budget covers queue

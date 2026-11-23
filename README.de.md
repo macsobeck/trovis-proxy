@@ -1,6 +1,12 @@
-# TROVIS Modbus Proxy für TROVIS-VIEW und SAMSON-Regler
+# TROVIS Modbus Proxy für den Zugriff von Smart-Home-Anwendungen auf SAMSON-Regler
 
 [English](README.md) | Deutsch
+
+Der TROVIS Modbus Proxy ist ein selbst gehosteter Modbus-Proxy. Er verbindet Smart-Home-Anwendungen
+wie SAMSON TROVIS-VIEW, Home Assistant und Node-RED zuverlässig mit TROVIS-Heizungsreglern,
+darunter Modelle der Baureihe SAMSON TROVIS 5573-1xxx. Er stellt den Anwendungen einen stabilen
+Modbus-TCP-Endpunkt bereit und verbindet sich über Modbus TCP, RTU-over-TCP oder Serial RTU
+mit dem Regler.
 
 > **Neu in 1.2.1**
 >
@@ -22,13 +28,8 @@
 >
 > Einzelheiten stehen im [Changelog](CHANGELOG.md#121---2026-11-22).
 
-Der **TROVIS Modbus Proxy** ist ein selbst gehosteter Modbus-Proxy für eine zuverlässige
-Kommunikation zwischen **SAMSON TROVIS-VIEW** und TROVIS-Heizungsreglern, einschließlich der
-Baureihe **SAMSON TROVIS 5573-1xxx**. Er stellt TROVIS-VIEW einen stabilen Modbus-TCP-Endpunkt
-bereit und verbindet sich über Modbus TCP, RTU-over-TCP oder Serial RTU mit dem Regler.
-
 ```text
-TROVIS-VIEW → Modbus TCP → TROVIS Modbus Proxy → Modbus TCP / RTU-over-TCP / Serial RTU → Regler
+Client-Anwendung → Modbus TCP → TROVIS Modbus Proxy → Modbus TCP / RTU-over-TCP / Serial RTU → Regler
 ```
 
 Der Modbus Proxy leitet Modbus-PDUs unverändert weiter und verwendet keine regler- oder
@@ -38,11 +39,11 @@ Forschungsumgebung; er ist nicht Bestandteil des Modbus-Proxy-Kerns.
 
 ## Hauptvorteile
 
-- Zuverlässiger TROVIS-VIEW-Zugriff über einen stabilen Modbus-TCP-Listener auf Port `7112`.
+- Stabiler Modbus-TCP-Zugriff für TROVIS-VIEW, Home Assistant, Node-RED und weitere Clients auf Port `7112`.
 - Stabile Firmware-Updates des Reglers über TROVIS-VIEW mit derselben zuverlässigen
   Proxy-Verbindung.
 - Reglerverbindungen über Modbus TCP, transparentes RTU-over-TCP oder Serial RTU.
-- Docker-Compose-Bereitstellung für Linux-Server und NAS-Systeme wie Synology.
+- Docker-Compose-Bereitstellung für Linux-Server und NAS-Systeme wie z.B. Synology.
 - Dauerhaft gespeicherte Reglerprofile mit einer responsiven browserbasierten
   Administrationsoberfläche.
 - Koordinierung mehrerer Clients, sichere Wiederholungen von Lesezugriffen, geschützte
@@ -88,7 +89,7 @@ Dieses Interoperabilitätsproblem war der ursprüngliche Anlass für die Entwick
 Modbus Proxy. Inzwischen hat sich das Projekt zu einer allgemeineren Kommunikationsschicht mit
 weiteren Stärken entwickelt:
 
-- **Koordinierter Mehr-Client-Zugriff:** TROVIS-VIEW, Node-RED, TROVIS 55 Pro und weitere
+- **Koordinierter Mehr-Client-Zugriff:** TROVIS-VIEW, Home Assistant, Node-RED, TROVIS 55 Pro und weitere
   Modbus-TCP-Clients können über einen Modbus Proxy auf denselben Regler zugreifen. Die
   Anfragesequenzen eines Clients werden in eine Warteschlange gestellt und zusammengehalten,
   damit konkurrierende Anwendungen keine fehlerhaften Reglerauslesungen verursachen.
@@ -120,9 +121,9 @@ weiteren Stärken entwickelt:
 
 ### Status des Modbus Proxy
 
-![Statusübersicht des TROVIS Modbus Proxy für TROVIS-VIEW und einen SAMSON-Regler](docs/images/gateway-status.png)
+![Statusübersicht des TROVIS Modbus Proxy für Modbus-TCP-Clients und einen SAMSON-Regler](docs/images/gateway-status.png)
 
-*Statusübersicht für den TROVIS-VIEW-Listener und die aktive Verbindung zum Regler.*
+*Statusübersicht für den Modbus-TCP-Listener und die aktive Verbindung zum Regler.*
 
 ### Reglerverbindung
 

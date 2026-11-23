@@ -2,11 +2,11 @@
 
 English | [Deutsch](installation.de.md)
 
-This guide installs the TROVIS Modbus Proxy and connects it between
-TROVIS-VIEW and a controller.
+This guide shows how to install the TROVIS Modbus Proxy and connect client applications such as
+TROVIS-VIEW, Home Assistant, and Node-RED to a SAMSON TROVIS controller.
 
 ```text
-TROVIS-VIEW → Modbus TCP → Modbus Proxy → selected transport → controller
+Client application → Modbus TCP → Modbus Proxy → selected transport → controller
 ```
 
 Docker Compose is the recommended installation method. A native Python setup is
@@ -18,7 +18,7 @@ You need:
 
 - a Linux, macOS, or Windows host with network access to the controller;
 - Docker Engine with the Compose plugin, or Docker Desktop;
-- TCP port `7112` reachable from the TROVIS-VIEW computer;
+- TCP port `7112` on the Docker host reachable from the client applications;
 - the controller host, port, Modbus station address, and transport type;
 - Python 3.12 or newer only when using the native installation.
 
@@ -88,7 +88,7 @@ The image includes the optional Serial RTU dependency. The default ports are:
 
 | Purpose | Host binding | Container port |
 |---|---|---:|
-| TROVIS-VIEW Modbus TCP listener | all interfaces, port `7112` | `7112` |
+| Modbus TCP listener for client applications | all interfaces, port `7112` | `7112` |
 | Administration website | all interfaces, port `8083` | `8080` |
 
 ## 6. Start the Modbus Proxy
@@ -173,23 +173,15 @@ sends no arbitrary Modbus register request.
 A successful TCP connection proves network reachability only. It does not prove
 that the controller accepts a specific Modbus function or address.
 
-## 10. Configure TROVIS-VIEW
+## 10. Connect client applications
 
-Configure TROVIS-VIEW separately. Do not enter TROVIS-VIEW settings in the
-Modbus Proxy profile.
+Set the connection type to **Modbus TCP** in each client application. Use the Docker host's IP
+address or DNS name and port `7112`. In TROVIS-VIEW, use the station address required by the project.
 
-Use:
+The proxy records the Unit ID sent by the client. For requests to the controller, it uses the
+station address configured in the active controller profile.
 
-- **Modbus Proxy IP:** the IP address of the Docker host;
-- **Modbus Proxy port:** `7112`;
-- **Station address:** the value required by the TROVIS-VIEW project.
-
-The Modbus Proxy records the downstream Unit ID sent by TROVIS-VIEW. For the
-controller-facing request it uses the station address configured in the active
-controller profile.
-
-Allow inbound TCP port `7112` in the host firewall only from the required
-TROVIS-VIEW network or workstation.
+Allow inbound TCP port `7112` in the host firewall only from the systems running your client applications.
 
 ## 11. Verify operation
 
@@ -197,7 +189,7 @@ Open the **Status** page and check:
 
 - the listener address and port;
 - the active profile and controller target;
-- connected TROVIS-VIEW clients;
+- connected Modbus TCP clients;
 - request, timeout, retry, and reconnect counters.
 
 Follow live logs when diagnosing communication:
@@ -305,10 +297,10 @@ use an absolute configuration path.
 Check the container status and Modbus Proxy logs with the Compose command for the selected image, and
 verify that no other process uses host port `8083`.
 
-### TROVIS-VIEW cannot connect
+### A Modbus TCP client cannot connect
 
-Confirm that TROVIS-VIEW uses the Docker host IP, not `127.0.0.1`, and verify that
-TCP port `7112` is allowed through the host firewall.
+Verify the client's Modbus TCP settings. If the application runs on a separate device, use the
+Docker host's LAN address or DNS name and check that the host firewall allows TCP port `7112`.
 
 ### The controller test fails
 

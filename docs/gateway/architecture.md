@@ -3,7 +3,7 @@
 The generic data path is:
 
 ```text
-TROVIS-VIEW / TROVIS 55 Pro / Node-RED --Modbus TCP--> downstream listener
+TROVIS-VIEW / Home Assistant / Node-RED / TROVIS 55 Pro --Modbus TCP--> downstream listener
     --> client-sequence arbiter --> serialized Modbus Proxy
     --> selected upstream transport --> controller
 ```

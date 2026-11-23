@@ -2,11 +2,11 @@
 
 [English](installation.md) | Deutsch
 
-Diese Anleitung installiert den TROVIS Modbus Proxy und verbindet ihn zwischen TROVIS-VIEW und
-einem Regler.
+Diese Anleitung zeigt, wie Sie den TROVIS Modbus Proxy installieren und Client-Anwendungen wie
+TROVIS-VIEW, Home Assistant und Node-RED mit einem SAMSON-TROVIS-Regler verbinden.
 
 ```text
-TROVIS-VIEW → Modbus TCP → Modbus Proxy → ausgewählter Transport → Regler
+Client-Anwendung → Modbus TCP → Modbus Proxy → ausgewählter Transport → Regler
 ```
 
 Docker Compose ist die empfohlene Installationsmethode. Eine native Python-Installation für die
@@ -18,7 +18,7 @@ Sie benötigen:
 
 - einen Linux-, macOS- oder Windows-Rechner mit Netzwerkzugriff auf den Regler;
 - Docker Engine mit Compose-Plugin oder Docker Desktop;
-- TCP-Port `7112`, erreichbar vom TROVIS-VIEW-Rechner;
+- TCP-Port `7112` des Docker-Hosts, erreichbar von den Client-Anwendungen;
 - Host, Port, Modbus-Stationsadresse und Transportart des Reglers;
 - Python 3.12 oder neuer nur für die native Installation.
 
@@ -90,7 +90,7 @@ Das Image enthält die optionale Abhängigkeit für Serial RTU. Die Standardport
 
 | Zweck | Host-Bindung | Container-Port |
 |---|---|---:|
-| Modbus-TCP-Listener für TROVIS-VIEW | alle Schnittstellen, Port `7112` | `7112` |
+| Modbus-TCP-Listener für Client-Anwendungen | alle Schnittstellen, Port `7112` | `7112` |
 | Administrationsoberfläche | alle Schnittstellen, Port `8083` | `8080` |
 
 ## 6. Modbus Proxy starten
@@ -176,22 +176,17 @@ Station und Verbindungszeit. Er sendet absichtlich keine beliebige Modbus-Regist
 Eine erfolgreiche TCP-Verbindung bestätigt nur die Erreichbarkeit im Netzwerk. Sie belegt nicht,
 dass der Regler einen bestimmten Modbus-Funktionscode oder eine bestimmte Adresse akzeptiert.
 
-## 10. TROVIS-VIEW konfigurieren
+## 10. Client-Anwendungen verbinden
 
-Konfigurieren Sie TROVIS-VIEW getrennt. Tragen Sie TROVIS-VIEW-Einstellungen nicht im Profil des
-Modbus Proxy ein.
+Wählen Sie in jeder Client-Anwendung **Modbus TCP** als Verbindungsart. Verwenden Sie die
+IP-Adresse oder den DNS-Namen des Docker-Hosts und Port `7112`. In TROVIS-VIEW verwenden Sie
+die vom Projekt benötigte Stationsadresse.
 
-Verwenden Sie:
+Der Proxy erfasst die vom Client gesendete Unit ID. Für Anfragen an den Regler verwendet er die
+im aktiven Reglerprofil konfigurierte Stationsadresse.
 
-- **IP-Adresse des Modbus Proxy:** IP-Adresse des Docker-Hosts;
-- **Port des Modbus Proxy:** `7112`;
-- **Stationsadresse:** den vom TROVIS-VIEW-Projekt benötigten Wert.
-
-Der Modbus Proxy speichert die von TROVIS-VIEW gesendete nachgelagerte Unit ID. Für die Anfrage an
-den Regler verwendet er die im aktiven Reglerprofil konfigurierte Stationsadresse.
-
-Erlauben Sie eingehenden TCP-Verkehr auf Port `7112` in der Host-Firewall nur aus dem erforderlichen
-TROVIS-VIEW-Netzwerk beziehungsweise vom benötigten Arbeitsplatzrechner.
+Erlauben Sie eingehenden TCP-Verkehr auf Port `7112` in der Host-Firewall nur von den Systemen,
+auf denen Ihre Client-Anwendungen laufen.
 
 ## 11. Betrieb prüfen
 
@@ -199,7 +194,7 @@ TROVIS-VIEW-Netzwerk beziehungsweise vom benötigten Arbeitsplatzrechner.
 
 - Listener-Adresse und -Port;
 - aktives Profil und Reglerziel;
-- verbundene TROVIS-VIEW-Clients;
+- verbundene Modbus-TCP-Clients;
 - Zähler für Anfragen, Zeitüberschreitungen, Wiederholungen und Neuverbindungen.
 
 Verfolgen Sie bei der Diagnose die laufenden Protokolle:
@@ -310,10 +305,11 @@ Prüfen Sie den Containerstatus und die Protokolle des Modbus Proxy mit dem Comp
 gewählte Image-Variante. Stellen Sie außerdem sicher, dass kein anderer Prozess Host-Port `8083`
 verwendet.
 
-### TROVIS-VIEW kann keine Verbindung herstellen
+### Ein Modbus-TCP-Client kann keine Verbindung herstellen
 
-Stellen Sie sicher, dass TROVIS-VIEW die IP-Adresse des Docker-Hosts und nicht `127.0.0.1`
-verwendet. Prüfen Sie außerdem, ob TCP-Port `7112` in der Host-Firewall freigegeben ist.
+Prüfen Sie die Modbus-TCP-Einstellungen des Clients. Läuft die Anwendung auf einem separaten
+Gerät, verwenden Sie die LAN-Adresse oder den DNS-Namen des Docker-Hosts. Prüfen Sie außerdem,
+ob die Host-Firewall TCP-Port `7112` freigibt.
 
 ### Der Reglertest schlägt fehl
 
