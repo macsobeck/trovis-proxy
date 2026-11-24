@@ -7,6 +7,23 @@ semantic versioning.
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-11-24
+
+### Added
+
+- **Reset counters** clears request, retry, timeout, and reconnect counts while the proxy
+  continues serving Modbus clients. The live client count, queue depth, and connection state
+  remain available.
+
+### Changed
+
+- The timing editor offers **Single-client polling**, **Multi-client polling**,
+  **TROVIS-VIEW + up to 2 clients**, and **Custom**. The multi-client preset uses a
+  0.2-second sequence idle window so waiting clients get their turn sooner.
+- The TROVIS-VIEW preset uses the former Standard timing values, including the 0.8-second
+  sequence idle window. Existing profiles retain their saved values.
+- Status updates automatically and refreshes immediately after a counter reset.
+
 ## [1.2.1] - 2026-11-22
 
 ### Added
@@ -109,7 +126,8 @@ semantic versioning.
 - Hardened the runtime image by upgrading operating-system packages, updating and removing the
   build-time package installer, and running the service as an unprivileged user.
 
-[Unreleased]: https://github.com/macsobeck/trovis-proxy/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/macsobeck/trovis-proxy/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/macsobeck/trovis-proxy/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/macsobeck/trovis-proxy/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/macsobeck/trovis-proxy/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/macsobeck/trovis-proxy/compare/v1.1.0...v1.1.1

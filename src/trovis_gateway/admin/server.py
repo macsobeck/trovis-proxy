@@ -106,8 +106,18 @@ class AdminHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urlsplit(self.path).path
+        if path == "/api/metrics/reset" and self.headers.get_content_type() != "application/json":
+            self._json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {"error": "expected application/json"})
+            return
         try:
             payload = self._read_json()
+            if path == "/api/metrics/reset":
+                if payload:
+                    raise ValueError("expected an empty JSON object")
+                self.admin.metrics.reset_counters()
+                self.send_response(HTTPStatus.NO_CONTENT)
+                self.end_headers()
+                return
             if path == "/api/forwarding":
                 enabled = payload.get("enabled")
                 if not isinstance(enabled, bool):

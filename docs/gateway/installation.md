@@ -143,9 +143,10 @@ Enter the settings for the connection from the Modbus Proxy to the controller:
    injected into Modbus traffic.
 6. Keep **Maximum connection age** at `25 s` as a starting point. After that age the proxy renews
    the connection before the next client sequence. A value of `0` disables scheduled renewal.
-7. Start with **Standard (recommended)** for shared access. Its **Client sequence idle window**
-   of `0.8 s` keeps consecutive requests from one client together across short pauses. Its
-   **Total timeout** of `16 s` includes time waiting behind another client's sequence.
+7. Choose **Single-client polling** for one application, **Multi-client polling** for several
+   polling applications, or **TROVIS-VIEW + up to 2 clients** for TROVIS-VIEW readouts. The
+   **Total timeout** of `16 s` includes time waiting in the queue. See
+   [timing presets](configuration.md#timing-presets).
 8. Review the remaining timeouts, request spacing, and retry values.
 9. Select **Save**.
 10. Select **Activate** if this is not already the active profile.
@@ -191,6 +192,9 @@ Open the **Status** page and check:
 - the active profile and controller target;
 - connected Modbus TCP clients;
 - request, timeout, retry, and reconnect counters.
+
+The page updates every five seconds. Select **Reset counters** and confirm to start a fresh
+measurement period while the proxy is running.
 
 Follow live logs when diagnosing communication:
 

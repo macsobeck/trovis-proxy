@@ -8,25 +8,16 @@ darunter Modelle der Baureihe SAMSON TROVIS 5573-1xxx. Er stellt den Anwendungen
 Modbus-TCP-Endpunkt bereit und verbindet sich über Modbus TCP, RTU-over-TCP oder Serial RTU
 mit dem Regler.
 
-> **Neu in 1.2.1**
+> **Neu in 1.2.2**
 >
-> - **Modbus-Antwortprüfung.** Der Proxy verwirft unpassende Antworten und erkennt bei RTU-over-TCP
->   zusätzliche oder verspätete Daten. Nach einem Fehler baut er die Verbindung kontrolliert neu auf.
-> - **Parallelzugriff und Timing.** Der Gesamt-Timeout umfasst auch die Warteschlange. Geplante
->   TCP-Neuverbindungen erfolgen zwischen Abfragesequenzen. Das Profil **Standard** verwendet jetzt
->   **16 s Gesamt-Timeout** und **0,8 s Client-Leerlauffenster**.
-> - **DNS und Verbindungsaufbau.** Pro Reglerprofil lassen sich IPv4, IPv6 oder die Systemreihenfolge
->   wählen. Der Proxy weicht schneller auf die andere Adressfamilie aus und nutzt aktuelle
->   DNS-Ergebnisse beim Wiederverbinden erneut.
-> - **Netzwerkdiagnose.** Der Web-Verbindungstest zeigt DNS-Zeit, TCP-Zeit und erreichbare Ziel-IP.
->   Das Dockerfile ergänzt `dig`, `nslookup`, `ping` und `traceroute`.
-> - **TROVIS-VIEW-Hinweis.** Im getesteten Aufbau funktioniert das erste Auslesen nach einem
->   Neustart von TROVIS-VIEW zuverlässig. Beim zweiten Auslesen verwendet TROVIS-VIEW eine andere
->   Abfolge von Abfragen. Dabei kann eine Fehlermeldung erscheinen. Das Verhalten tritt auch bei
->   direkter Verbindung zum USR-Adapter auf und ist damit unabhängig vom Proxy.
->   Näheres siehe [FAQ](#warum-kann-das-zweite-auslesen-in-trovis-view-fehlschlagen).
+> - **Timing-Profile nach Einsatzszenario.** Zur Auswahl stehen **Single-client polling**,
+>   **Multi-client polling**, **TROVIS-VIEW + up to 2 clients** und **Custom**. Multi-client
+>   polling bedient wartende Clients früher. Das TROVIS-VIEW-Profil verwendet die bisherigen
+>   Standardwerte.
+> - **Statuszähler zurücksetzen.** Anfragen, Wiederholungen, Timeouts und Neuverbindungen
+>   lassen sich im laufenden Betrieb auf der automatisch aktualisierten Statusseite zurücksetzen.
 >
-> Einzelheiten stehen im [Changelog](CHANGELOG.md#121---2026-11-22).
+> Einzelheiten stehen im [Changelog](CHANGELOG.md#122---2026-11-24).
 
 ```text
 Client-Anwendung → Modbus TCP → TROVIS Modbus Proxy → Modbus TCP / RTU-over-TCP / Serial RTU → Regler
@@ -109,15 +100,15 @@ weiteren Stärken entwickelt:
 - **Kontrollierte Wartungspausen:** Die Weiterleitung kann angehalten werden, ohne den Dienst zu
   stoppen. Neue und bereits wartende Anfragen werden mit der Modbus-Ausnahme `0x0B` abgewiesen;
   aktive Anfragen werden sicher beendet und nichts wird zur späteren Ausführung gespeichert.
-- **Praktische Timing-Profile:** Schnell, Standard und Zuverlässig decken typische Betriebsfälle
-  ab; mit Benutzerdefiniert bleiben alle Timingwerte einzeln einstellbar.
+- **Praktische Timing-Profile:** Voreinstellungen für einen Client, mehrere abfragende Clients
+  oder TROVIS-VIEW mit weiteren Clients. Unter Custom lassen sich die Timingwerte einzeln einstellen.
 - **Geschützte Schreibvorgänge:** Schreibvorgänge werden nach einem uneindeutigen Ergebnis niemals
   wiederholt. Dadurch sinkt das Risiko unbeabsichtigter Konfigurationsänderungen.
 - **Einfacher selbst gehosteter Betrieb:** Docker Compose, dauerhafte Konfiguration und eine
   browserbasierte Administrationsoberfläche machen den Modbus Proxy für NAS-Systeme und andere
   dauerhaft laufende Linux-Rechner geeignet.
-- **Betriebstransparenz:** Die Statusoberfläche zeigt verbundene Clients, wartende Anfragen,
-  Wiederholungen, Zeitüberschreitungen, Neuverbindungen und die aktive Reglerverbindung.
+- **Betriebstransparenz:** Die Statusoberfläche zeigt den aktuellen Verbindungs- und Warteschlangenstatus
+  sowie rücksetzbare Zähler für Anfragen, Wiederholungen, Zeitüberschreitungen und Neuverbindungen.
 
 ### Status des Modbus Proxy
 

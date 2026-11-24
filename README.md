@@ -8,26 +8,15 @@ controllers, including the SAMSON TROVIS 5573-1xxx series. It provides a stable 
 for Smart Home Applications and connects to the controller through Modbus TCP, RTU-over-TCP, or
 Serial RTU.
 
-> **New in 1.2.1**
+> **New in 1.2.2**
 >
-> - **Modbus response validation.** The proxy rejects mismatched responses and detects extra
->   or late data on RTU-over-TCP connections. After an error, it re-establishes the connection
->   before continuing.
-> - **Concurrent access and timing.** The total timeout includes time spent in the queue.
->   Scheduled TCP reconnects happen between request sequences. The **Standard** preset now uses
->   a **16 s total timeout** and a **0.8 s client idle window**.
-> - **DNS and connection setup.** Each controller profile can prefer IPv4, prefer IPv6, or follow
->   the system resolver order. The proxy falls back to the other address family sooner and reuses
->   recent DNS results when reconnecting.
-> - **Network diagnostics.** The web connection test shows DNS and TCP timings and the target IP
->   it reaches. The Dockerfile adds `dig`, `nslookup`, `ping`, and `traceroute`.
-> - **TROVIS-VIEW note.** In the tested setup, the first read after restarting TROVIS-VIEW
->   succeeds reliably. On the second read, TROVIS-VIEW uses a different request sequence and
->   may display an error. The same behavior occurs with a direct connection to the USR adapter,
->   independently of the proxy. See the [FAQ](#why-can-a-second-read-in-trovis-view-fail)
->   for details.
+> - **Timing presets by use case.** Choose **Single-client polling**, **Multi-client polling**,
+>   **TROVIS-VIEW + up to 2 clients**, or **Custom**. Multi-client polling gives waiting
+>   clients an earlier turn. The TROVIS-VIEW preset uses the former Standard values.
+> - **Reset status counters.** Reset requests, retries, timeouts, and reconnects from the
+>   automatically updated Status page while the proxy continues running.
 >
-> See the [changelog](CHANGELOG.md#121---2026-11-22) for details.
+> See the [changelog](CHANGELOG.md#122---2026-11-24) for details.
 
 ```text
 Client application → Modbus TCP → TROVIS Modbus Proxy → Modbus TCP / RTU-over-TCP / Serial RTU → controller
@@ -102,15 +91,15 @@ strengths:
 - **Controlled maintenance pauses:** Forwarding can be paused without stopping the service. New
   and already queued requests are rejected with Modbus exception `0x0B`; active requests finish
   safely, and nothing is stored for later execution.
-- **Practical timing presets:** Fast, Standard, and Reliable presets cover common operating
-  conditions, while Custom keeps every timing value individually adjustable.
+- **Practical timing presets:** Choose single-client polling, multi-client polling, or
+  TROVIS-VIEW with background clients. Custom lets you adjust individual timing values.
 - **Protected write operations:** Writes are never repeated after an ambiguous result, reducing
   the risk of unintended configuration changes.
 - **Simple self-hosted operation:** Docker Compose deployment, persistent configuration, and a
   browser-based administration interface make the Modbus Proxy suitable for NAS systems and other
   always-on Linux hosts.
-- **Operational visibility:** The status interface shows connected clients, queued requests,
-  retries, timeouts, reconnects, and the active controller connection.
+- **Operational visibility:** The status interface shows the live connection and queue state
+  alongside resettable request, retry, timeout, and reconnect counters.
 
 ### Modbus Proxy status
 

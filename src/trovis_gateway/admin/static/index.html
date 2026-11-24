@@ -24,8 +24,9 @@
     <section id="status-view" class="view" aria-labelledby="status-title">
       <div class="page-heading">
         <div><p class="eyebrow">Operations overview</p><h1 id="status-title">Modbus Proxy status</h1></div>
-        <button class="secondary" id="refresh-status">Refresh</button>
+        <button type="button" class="secondary" id="reset-counters">Reset counters</button>
       </div>
+      <div id="reset-counters-message" class="status-message" role="status"></div>
 
       <section class="card parameter-cluster forwarding-control">
         <header class="cluster-heading">
@@ -180,9 +181,17 @@
               <div><p class="cluster-kicker">Communication</p><h2>Timing</h2><p>Timeouts, minimum intervals, and delays for the controller connection.</p></div>
             </header>
             <div class="parameter-list">
-              <div class="parameter-row">
+              <div class="parameter-row timing-preset-row">
                 <label class="parameter-label" for="timing-preset">Timing preset</label>
-                <div class="parameter-value"><select id="timing-preset"><option value="fast">Fast</option><option value="standard">Standard (recommended)</option><option value="reliable">Reliable</option><option value="custom">Custom</option></select><small>Selecting a preset fills all timing values below. Manual changes select Custom.</small></div>
+                <div class="parameter-value">
+                  <select id="timing-preset" aria-describedby="timing-preset-description">
+                    <option value="single-client">Single-client polling</option>
+                    <option value="multi-client">Multi-client polling</option>
+                    <option value="trovis-view" selected>TROVIS-VIEW + up to 2 clients</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                  <small id="timing-preset-description">For TROVIS-VIEW alone or with up to two background clients, such as Home Assistant and Node-RED.</small>
+                </div>
               </div>
               <div class="parameter-row"><label class="parameter-label" for="connect-timeout">Connection timeout</label><div class="parameter-value input-with-unit"><input id="connect-timeout" type="number" min="0.1" max="120" step="0.1"><span>s</span></div></div>
               <div class="parameter-row"><label class="parameter-label" for="response-timeout">Response timeout</label><div class="parameter-value input-with-unit"><input id="response-timeout" type="number" min="0.1" max="120" step="0.1"><span>s</span></div></div>
@@ -211,7 +220,7 @@
       </div>
     </section>
   </main>
-  <footer class="site-footer"><span id="release-version">Release 1.2.1</span><span aria-hidden="true"> · </span>Design by macsobeck</footer>
+  <footer class="site-footer"><span id="release-version">Release 1.2.2</span><span aria-hidden="true"> · </span>Design by macsobeck</footer>
   <script src="/app.js" defer></script>
 </body>
 </html>

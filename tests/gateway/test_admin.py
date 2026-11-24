@@ -4,6 +4,7 @@ import asyncio
 import json
 import tempfile
 import unittest
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -37,7 +38,13 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         await asyncio.to_thread(self.server.close)
         self.temporary.cleanup()
 
-    async def fetch(self, path: str, payload: dict[str, object] | None = None) -> tuple[int, str]:
+    async def fetch(
+        self,
+        path: str,
+        payload: dict[str, object] | None = None,
+        *,
+        content_type: str = "application/json",
+    ) -> tuple[int, str]:
         def request() -> tuple[int, str]:
             data = json.dumps(payload).encode() if payload is not None else None
             method = "POST" if payload is not None else "GET"
@@ -45,7 +52,7 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
                 self.base + path,
                 data=data,
                 method=method,
-                headers={"Content-Type": "application/json"},
+                headers={"Content-Type": content_type},
             )
             with urllib.request.urlopen(req, timeout=3) as response:
                 return response.status, response.read().decode()
@@ -81,7 +88,7 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(profile["timing"]["total_request_timeout_s"], 16)
         _, status_body = await self.fetch("/api/status")
         self.assertNotIn("secret-value", status_body)
-        self.assertEqual(json.loads(status_body)["version"], "1.2.1")
+        self.assertEqual(json.loads(status_body)["version"], "1.2.2")
 
     async def test_forwarding_state_can_be_changed_and_is_reported(self) -> None:
         status, body = await self.fetch(
@@ -100,6 +107,51 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         _, config_body = await self.fetch("/api/config")
         self.assertFalse(json.loads(config_body)["forwarding_enabled"])
 
+    async def test_metrics_reset_clears_counters_and_preserves_live_status(self) -> None:
+        self.store.upsert_profile({"name": "Example", "host": "controller.invalid"})
+        self.store.set_forwarding_enabled(False)
+        config_before = self.store.path.read_bytes()
+        counters = {"requests": 27, "timeouts": 3, "retries": 4, "reconnects": 2}
+        live_status = {
+            "downstream_clients": 3,
+            "queue_depth": 2,
+            "upstream_connected": True,
+            "upstream_target": "controller.invalid:502",
+        }
+        for field, value in (counters | live_status).items():
+            self.server.metrics.set(field, value)
+
+        _, body = await self.fetch("/api/status")
+        previous_status = json.loads(body)
+        self.assertEqual(previous_status["metrics"], counters | live_status)
+
+        self.assertEqual(await self.fetch("/api/metrics/reset", {}), (204, ""))
+        _, body = await self.fetch("/api/status")
+        cleared = dict.fromkeys(counters, 0)
+        self.assertEqual(
+            json.loads(body), previous_status | {"metrics": cleared | live_status}
+        )
+        self.assertEqual(self.store.path.read_bytes(), config_before)
+
+        for field in counters:
+            self.server.metrics.increment(field)
+        _, body = await self.fetch("/api/status")
+        self.assertEqual(json.loads(body)["metrics"], dict.fromkeys(counters, 1) | live_status)
+
+    async def test_metrics_reset_rejects_get_and_invalid_post_bodies(self) -> None:
+        self.server.metrics.increment("requests", 5)
+        for payload, content_type, code in (
+            (None, "application/json", 404),
+            ({}, "text/plain", 415),
+            ({"requests": 25}, "application/json", 400),
+        ):
+            with self.subTest(payload=payload, content_type=content_type):
+                with self.assertRaises(urllib.error.HTTPError) as failure:
+                    await self.fetch("/api/metrics/reset", payload, content_type=content_type)
+                with failure.exception as response:
+                    self.assertEqual(response.code, code)
+                self.assertEqual(self.server.metrics.snapshot()["requests"], 5)
+
     async def test_ui_has_controller_editor_but_no_downstream_editor(self) -> None:
         _, html = await self.fetch("/")
         self.assertIn('<html lang="en">', html)
@@ -112,7 +164,7 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('<h2>Modbus Proxy</h2>', html)
         self.assertNotIn('<h2>Gateway</h2>', html)
         self.assertIn("Design by macsobeck", html)
-        self.assertIn('<span id="release-version">Release 1.2.1</span>', html)
+        self.assertIn('<span id="release-version">Release 1.2.2</span>', html)
         self.assertIn("TROVIS-VIEW Listener", html)
         self.assertIn('class="parameter-row"', html)
         self.assertIn('class="parameter-label"', html)
@@ -122,6 +174,9 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('id="max-connection-age"', html)
         self.assertIn('id="client-burst-idle"', html)
         self.assertIn('id="forwarding-toggle"', html)
+        self.assertIn('id="reset-counters">Reset counters</button>', html)
+        self.assertIn('id="reset-counters-message"', html)
+        self.assertNotIn('id="refresh-status"', html)
         self.assertNotIn('id="disabled-request-policy"', html)
         self.assertNotIn('id="buffer-retention"', html)
         self.assertIn('id="timing-preset"', html)
@@ -129,9 +184,11 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('<option value="system">System order (default)</option>', html)
         self.assertIn('<option value="ipv4">Prefer IPv4</option>', html)
         self.assertIn('<option value="ipv6">Prefer IPv6</option>', html)
-        self.assertIn('<option value="fast">Fast</option>', html)
-        self.assertIn('<option value="standard">Standard (recommended)</option>', html)
-        self.assertIn('<option value="reliable">Reliable</option>', html)
+        self.assertIn('<option value="single-client">Single-client polling</option>', html)
+        self.assertIn('<option value="multi-client">Multi-client polling</option>', html)
+        self.assertIn(
+            '<option value="trovis-view" selected>TROVIS-VIEW + up to 2 clients</option>', html
+        )
         self.assertIn('<option value="custom">Custom</option>', html)
         self.assertNotIn("<details", html)
         self.assertNotIn('id="listen-port"', html)

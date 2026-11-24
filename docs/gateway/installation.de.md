@@ -146,10 +146,10 @@ für die Verbindung vom Modbus Proxy zum Regler ein:
 6. Verwenden Sie `25 s` als Ausgangswert für **Maximum connection age**. Nach Ablauf erneuert
    der Proxy die Verbindung vor der nächsten Abfragesequenz. Der Wert `0` deaktiviert die
    geplante Erneuerung.
-7. Wählen Sie für den Zugriff durch mehrere Anwendungen zunächst **Standard (recommended)**.
-   Das **Client sequence idle window** von `0,8 s` hält die Abfragen eines Clients über kurze
-   Pausen hinweg zusammen. Der **Total timeout** von `16 s` umfasst auch die Wartezeit, während
-   der Proxy die Abfragen eines anderen Clients abarbeitet.
+7. Wählen Sie **Single-client polling**, wenn eine Anwendung abfragt, **Multi-client polling**
+   für mehrere abfragende Anwendungen oder **TROVIS-VIEW + up to 2 clients** zum Auslesen mit
+   TROVIS-VIEW. Der **Total timeout** von `16 s` umfasst auch die Wartezeit in der Warteschlange.
+   Details stehen unter [Timing-Voreinstellungen](configuration.md#timing-presets).
 8. Prüfen Sie die übrigen Zeitüberschreitungen, Anfrageabstände und Wiederholungswerte.
 9. Wählen Sie **Save**.
 10. Wählen Sie **Activate**, wenn dieses Profil noch nicht aktiv ist.
@@ -196,6 +196,9 @@ auf denen Ihre Client-Anwendungen laufen.
 - aktives Profil und Reglerziel;
 - verbundene Modbus-TCP-Clients;
 - Zähler für Anfragen, Zeitüberschreitungen, Wiederholungen und Neuverbindungen.
+
+Die Seite aktualisiert sich alle fünf Sekunden. Wählen Sie **Reset counters** und bestätigen Sie,
+um im laufenden Betrieb einen neuen Messzeitraum zu starten.
 
 Verfolgen Sie bei der Diagnose die laufenden Protokolle:
 

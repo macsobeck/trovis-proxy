@@ -37,9 +37,13 @@ h2 { margin:0; font-size:20px; }
 .primary:hover { background:var(--green-dark); }
 .secondary { color:var(--ink); background:#fff; border-color:#bcc6bf; }
 .secondary:hover { background:#f6f8f6; }
+.secondary:disabled { color:var(--muted); background:#f6f8f6; cursor:wait; }
 .danger { color:var(--red); background:#fff; border-color:#dcb9b5; }
 
 .status-columns { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
+.status-message { color:var(--green); font-size:14px; }
+.status-message:not(:empty) { margin-bottom:16px; }
+.status-message.error { color:var(--red); }
 .forwarding-control { margin-bottom:20px; }
 .forwarding-message { min-height:0; padding:0 24px; color:var(--green); font-size:13px; }
 .forwarding-message:not(:empty) { padding-top:11px; padding-bottom:11px; border-top:1px solid #e8ebe8; }
@@ -100,6 +104,10 @@ input:disabled { background:#eef1ee; color:#637068; }
 .form-message { min-height:22px; color:var(--green); font-size:14px; }
 .form-message.error { color:var(--red); }
 
+@media(max-width:1100px) {
+  .timing-preset-row { grid-template-columns:minmax(0,1fr); row-gap:6px; }
+  .timing-preset-row .parameter-label { padding-top:0; }
+}
 @media(max-width:900px) {
   .topbar { height:auto; min-height:68px; flex-wrap:wrap; padding:14px 20px; gap:10px 22px; }
   .brand { min-width:0; flex:1; }

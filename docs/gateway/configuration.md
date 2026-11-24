@@ -16,19 +16,35 @@ writes after a client timeout. The forwarding state is stored in `/data/config.j
 container restart. Any prerelease 1.2 buffering fields are removed automatically when the file is
 loaded.
 
+## Status counters
+
+The status page updates automatically every five seconds. **Reset counters** starts a new
+measurement period after confirmation by setting Requests, Retries, Timeouts, and Reconnects to
+zero. The proxy continues serving requests, and the live client count, queue depth, and connection
+state are still reported. Events recorded after the reset appear in the new counts.
+
 ## Timing presets
 
-The controller editor provides four choices. Selecting a preset fills the timing fields but does
-not change retry settings. Editing any timing field selects **Custom** automatically.
+The controller editor provides three scenario presets and **Custom**. Selecting a preset fills
+the timing fields. Retry settings are configured separately. Editing a timing field selects
+**Custom** automatically.
 
-| Preset | Connect | Response | Total | Minimum interval | Client idle | Settle | Reconnect | Max age |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Fast | 2 s | 1 s | 5 s | 0.05 s | 0.10 s | 0.10 s | 0.50 s | 25 s |
-| Standard | 3 s | 2 s | 16 s | 0.10 s | 0.80 s | 0.25 s | 1.00 s | 25 s |
-| Reliable | 5 s | 4 s | 20 s | 0.20 s | 1.00 s | 0.50 s | 2.00 s | 25 s |
+| Preset | Use it when | Client sequence idle window |
+|---|---|---:|
+| Single-client polling | One application polls directly, such as Home Assistant, Node-RED, ioBroker, or openHAB. | 0.10 s |
+| Multi-client polling | Several applications poll directly, such as Home Assistant and Node-RED, or openHAB and Telegraf. | 0.20 s |
+| TROVIS-VIEW + up to 2 clients | TROVIS-VIEW reads the controller alone or while one or two other clients poll in the background. | 0.80 s |
+| Custom | You want to set the values individually, for example to allow more time for a controller response. | Adjustable |
 
-New profiles start with Standard. To apply the current Standard values to an existing profile,
-select **Standard (recommended)** and save.
+The three presets use the same connection timeout (3 s), response timeout (2 s), total timeout
+(16 s), minimum interval (0.10 s), settle delay (0.25 s), reconnect delay (1 s), and maximum
+connection age (25 s). The shorter window in **Multi-client polling** lets the next waiting client
+take its turn sooner. The longer window in **TROVIS-VIEW** keeps a readout sequence together over
+short pauses.
+
+New profiles start with the existing defaults, shown as **TROVIS-VIEW + up to 2 clients**. Timing
+values in existing profiles are retained. The former **Standard** matches the TROVIS-VIEW preset.
+The former **Fast** and **Reliable** appear as **Custom**. To apply a preset, select it and save.
 
 Each profile contains transport, TCP endpoint or serial parameters, upstream Modbus Unit ID,
 timeouts, pacing, retry limits, and an optional access key. The API returns only a boolean saying

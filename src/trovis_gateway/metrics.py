@@ -32,6 +32,14 @@ class GatewayMetrics:
         with self._lock:
             setattr(self._values, field, value)
 
+    def reset_counters(self) -> None:
+        """Reset accumulated events while preserving live connection and queue state."""
+        with self._lock:
+            self._values.requests = 0
+            self._values.timeouts = 0
+            self._values.retries = 0
+            self._values.reconnects = 0
+
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
             return asdict(self._values)

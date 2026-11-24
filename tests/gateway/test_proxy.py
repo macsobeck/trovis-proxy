@@ -1010,6 +1010,67 @@ class ProxyTests(unittest.IsolatedAsyncioTestCase):
         await writer_a.wait_closed()
         await writer_b.wait_closed()
 
+    async def test_preset_idle_windows_allow_different_handoffs_after_a_gap(self) -> None:
+        first = bytes.fromhex("0300000001")
+        follow_up = bytes.fromhex("0300010001")
+        background = bytes.fromhex("0300020001")
+        reply = bytes.fromhex("0302002a")
+        order: list[bytes] = []
+
+        async def controller(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+            while True:
+                request = decode_rtu_adu(await reader.readexactly(8), 12)
+                order.append(request)
+                writer.write(encode_rtu_adu(12, reply))
+                await writer.drain()
+
+        async def poll(
+            reader: asyncio.StreamReader, writer: asyncio.StreamWriter, txid: int, pdu: bytes
+        ) -> None:
+            writer.write(encode_tcp_adu(txid, 7, pdu))
+            await writer.drain()
+            self.assertEqual(await read_tcp_adu(reader), ModbusTcpAdu(txid, 7, reply))
+
+        await self.start_rtu_controller(
+            controller,
+            timing={
+                "response_timeout_s": 1,
+                "total_request_timeout_s": 3,
+                "minimum_request_interval_s": 0,
+                "connect_settle_delay_s": 0,
+                "reconnect_delay_s": 0,
+                "max_connection_age_s": 0,
+            },
+        )
+        for idle_s, expected in (
+            (0.2, [first, background, follow_up]),
+            (0.8, [first, follow_up, background]),
+        ):
+            with self.subTest(idle_s=idle_s):
+                profile = self.store.active_profile()
+                assert profile is not None
+                profile.timing.client_burst_idle_s = idle_s
+                self.store.upsert_profile(profile.model_dump(), profile.id)
+                order.clear()
+                reader_a, writer_a = await asyncio.open_connection(
+                    "127.0.0.1", self.proxy.bound_port
+                )
+                reader_b, writer_b = await asyncio.open_connection(
+                    "127.0.0.1", self.proxy.bound_port
+                )
+                try:
+                    async with asyncio.timeout(2), asyncio.TaskGroup() as clients:
+                        await poll(reader_a, writer_a, 1, first)
+                        clients.create_task(poll(reader_b, writer_b, 2, background))
+                        await asyncio.sleep(0.4)
+                        await poll(reader_a, writer_a, 3, follow_up)
+                    self.assertEqual(order, expected)
+                finally:
+                    writer_a.close()
+                    writer_b.close()
+                    await writer_a.wait_closed()
+                    await writer_b.wait_closed()
+
     async def test_no_profile_returns_gateway_exception(self) -> None:
         await self.proxy.start()
         response = await self.request(bytes.fromhex("0300000001"))
