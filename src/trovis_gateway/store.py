@@ -14,6 +14,18 @@ from pydantic import SecretStr
 from .config import ControllerProfile, GatewayConfig
 
 
+def _preserve_legacy_sequence_window(payload: Any) -> None:
+    """Fill omitted windows with the default used by existing 1.2.1 and 1.2.2 files."""
+    if not isinstance(payload, dict) or not isinstance(profiles := payload.get("profiles"), list):
+        return
+    for profile in profiles:
+        if not isinstance(profile, dict):
+            continue
+        timing = profile.setdefault("timing", {})
+        if isinstance(timing, dict):
+            timing.setdefault("client_burst_idle_s", 0.8)
+
+
 def _drop_legacy_compatibility(payload: Any) -> bool:
     """Remove the retired FC01 settings from persisted or cached documents."""
     if not isinstance(payload, dict):
@@ -68,6 +80,7 @@ class ConfigStore:
         with self._lock:
             if self.path.exists():
                 payload = json.loads(self.path.read_text(encoding="utf-8"))
+                _preserve_legacy_sequence_window(payload)
                 migrated = _drop_legacy_compatibility(payload)
                 migrated = _drop_retired_buffering(payload) or migrated
                 self._config = GatewayConfig.model_validate(payload)
@@ -119,6 +132,10 @@ class ConfigStore:
                 None,
             )
             candidate = dict(payload)
+            if existing is not None:
+                timing = candidate.get("timing", {})
+                if isinstance(timing, dict):
+                    candidate["timing"] = {**existing.timing.model_dump(), **timing}
             candidate.pop("compatibility", None)
             candidate.pop("access_key_configured", None)
             clear_secret = bool(candidate.pop("clear_access_key", False))

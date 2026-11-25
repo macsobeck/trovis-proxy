@@ -9,32 +9,38 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#status" aria-label="Modbus Proxy home">
+    <a class="brand" href="#status" aria-label="Modbus Proxy home" data-i18n="homeLabel" data-i18n-attr="aria-label">
       <span class="brand-mark" aria-hidden="true">TG</span>
       <span><strong>TROVIS</strong><small>Modbus Proxy</small></span>
     </a>
-    <nav aria-label="Main navigation">
-      <button class="nav-button active" data-view="status">Status</button>
-      <button class="nav-button" data-view="profiles">Controller connection</button>
+    <nav aria-label="Main navigation" data-i18n="navLabel" data-i18n-attr="aria-label">
+      <button class="nav-button active" data-view="status" data-i18n="status">Status</button>
+      <button class="nav-button" data-view="profiles" data-i18n="controllerConnection">Controller connection</button>
     </nav>
-    <div class="health"><span class="health-dot" id="health-dot"></span><span id="health-label">Loading</span></div>
+    <div class="topbar-tools">
+      <div class="health"><span class="health-dot" id="health-dot"></span><span id="health-label" data-i18n="loading">Loading</span></div>
+      <select class="language-select" id="ui-language" aria-label="Interface language" data-i18n="languageLabel" data-i18n-attr="aria-label">
+        <option value="en" lang="en" selected>English</option>
+        <option value="de" lang="de">Deutsch</option>
+      </select>
+    </div>
   </header>
 
   <main>
     <section id="status-view" class="view" aria-labelledby="status-title">
       <div class="page-heading">
-        <div><p class="eyebrow">Operations overview</p><h1 id="status-title">Modbus Proxy status</h1></div>
-        <button type="button" class="secondary" id="reset-counters">Reset counters</button>
+        <div><p class="eyebrow" data-i18n="overview">Operations overview</p><h1 id="status-title" data-i18n="proxyStatus">Modbus Proxy status</h1></div>
+        <button type="button" class="secondary" id="reset-counters" data-i18n="resetCounters">Reset counters</button>
       </div>
       <div id="reset-counters-message" class="status-message" role="status"></div>
 
       <section class="card parameter-cluster forwarding-control">
         <header class="cluster-heading">
-          <div><p class="cluster-kicker">Operation</p><h2>Forwarding control</h2><p>Pause controller forwarding without stopping the Modbus Proxy. Active requests finish; new and queued requests receive Modbus exception 0x0B.</p></div>
+          <div><p class="cluster-kicker" data-i18n="operation">Operation</p><h2 data-i18n="forwardingControl">Forwarding control</h2><p data-i18n="forwardingHelp">Pause controller forwarding without stopping the Modbus Proxy. Active requests finish; new and queued requests receive Modbus exception 0x0B.</p></div>
           <label class="switch" for="forwarding-toggle">
             <input id="forwarding-toggle" type="checkbox" role="switch">
             <span class="switch-track" aria-hidden="true"><span></span></span>
-            <strong id="forwarding-label">On</strong>
+            <strong id="forwarding-label" data-i18n="on">On</strong>
           </label>
         </header>
         <div id="forwarding-message" class="forwarding-message" role="status" aria-live="polite"></div>
@@ -43,83 +49,83 @@
       <div class="status-columns">
         <article class="card parameter-cluster status-cluster">
           <header class="cluster-heading">
-            <div><p class="cluster-kicker">Downstream</p><h2>Modbus Proxy</h2></div>
-            <span class="status-indicator status-indicator-ok" id="proxy-badge">Ready</span>
+            <div><p class="cluster-kicker" data-i18n="downstream">Downstream</p><h2>Modbus Proxy</h2></div>
+            <span class="status-indicator status-indicator-ok" id="proxy-badge" data-i18n="ready">Ready</span>
           </header>
           <div class="parameter-list status-list">
-            <div class="parameter-row"><span class="parameter-label">TROVIS-VIEW Listener</span><strong class="parameter-output" id="listener">—</strong></div>
-            <div class="parameter-row"><span class="parameter-label">Active clients</span><strong class="parameter-output" id="clients">0</strong></div>
-            <div class="parameter-row"><span class="parameter-label">Requests</span><strong class="parameter-output" id="requests">0</strong></div>
-            <div class="parameter-row"><span class="parameter-label">Queue</span><strong class="parameter-output" id="queue">0</strong></div>
+            <div class="parameter-row"><span class="parameter-label" data-i18n="listener">TROVIS-VIEW Listener</span><strong class="parameter-output" id="listener">—</strong></div>
+            <div class="parameter-row"><span class="parameter-label" data-i18n="activeClients">Active clients</span><strong class="parameter-output" id="clients">0</strong></div>
+            <div class="parameter-row"><span class="parameter-label" data-i18n="requests">Requests</span><strong class="parameter-output" id="requests">0</strong></div>
+            <div class="parameter-row"><span class="parameter-label" data-i18n="queue">Queue</span><strong class="parameter-output" id="queue">0</strong></div>
           </div>
         </article>
 
         <article class="card parameter-cluster status-cluster">
           <header class="cluster-heading">
-            <div><p class="cluster-kicker">Upstream</p><h2>Controller connection</h2></div>
-            <span class="badge" id="upstream-badge">Disconnected</span>
+            <div><p class="cluster-kicker" data-i18n="upstream">Upstream</p><h2 data-i18n="controllerConnection">Controller connection</h2></div>
+            <span class="badge" id="upstream-badge" data-i18n="disconnected">Disconnected</span>
           </header>
           <div class="parameter-list status-list">
-            <div class="parameter-row"><span class="parameter-label">Active profile</span><strong class="parameter-output" id="active-profile-name">No active profile</strong></div>
-            <div class="parameter-row"><span class="parameter-label">Target</span><span class="parameter-output muted" id="active-profile-target">Create a profile.</span></div>
-            <div class="parameter-row"><span class="parameter-label">Retries</span><strong class="parameter-output" id="retries">0</strong></div>
-            <div class="parameter-row"><span class="parameter-label">Timeouts</span><strong class="parameter-output" id="timeouts">0</strong></div>
-            <div class="parameter-row"><span class="parameter-label">Reconnects</span><strong class="parameter-output" id="reconnects">0</strong></div>
+            <div class="parameter-row"><span class="parameter-label" data-i18n="activeProfile">Active profile</span><strong class="parameter-output" id="active-profile-name" data-i18n="noActiveProfile">No active profile</strong></div>
+            <div class="parameter-row"><span class="parameter-label" data-i18n="target">Target</span><span class="parameter-output muted" id="active-profile-target" data-i18n="createProfile">Create a profile.</span></div>
+            <div class="parameter-row"><span class="parameter-label" data-i18n="retries">Retries</span><strong class="parameter-output" id="retries">0</strong></div>
+            <div class="parameter-row"><span class="parameter-label" data-i18n="timeouts">Timeouts</span><strong class="parameter-output" id="timeouts">0</strong></div>
+            <div class="parameter-row"><span class="parameter-label" data-i18n="reconnects">Reconnects</span><strong class="parameter-output" id="reconnects">0</strong></div>
           </div>
         </article>
       </div>
-      <aside class="notice"><strong>Safety boundary</strong><span>The Modbus Proxy forwards Modbus PDUs transparently. A stored access key is not inserted into messages in pass-through mode.</span></aside>
+      <aside class="notice"><strong data-i18n="safety">Safety boundary</strong><span data-i18n="safetyHelp">The Modbus Proxy forwards Modbus PDUs transparently. A stored access key is not inserted into messages in pass-through mode.</span></aside>
     </section>
 
     <section id="profiles-view" class="view hidden" aria-labelledby="profiles-title">
       <div class="page-heading">
-        <div><p class="eyebrow">Modbus Proxy → Controller</p><h1 id="profiles-title">Controller connection</h1><p class="subtitle">Manage the controller transport, target, and timing.</p></div>
-        <button class="primary" id="new-profile">New profile</button>
+        <div><p class="eyebrow" data-i18n="connectionDirection">Modbus Proxy → Controller</p><h1 id="profiles-title" data-i18n="controllerConnection">Controller connection</h1><p class="subtitle" data-i18n="controllerConnectionHelp">Manage the controller transport, target, and timing.</p></div>
+        <button class="primary" id="new-profile" data-i18n="newProfile">New profile</button>
       </div>
 
       <div class="profile-layout">
-        <aside class="profile-list card" aria-label="Connection profiles"><div id="profile-list"></div></aside>
+        <aside class="profile-list card" aria-label="Connection profiles" data-i18n="connectionProfiles" data-i18n-attr="aria-label"><div id="profile-list"></div><div class="empty" id="empty-profiles" hidden data-i18n="emptyProfiles">No controller profiles yet.</div></aside>
         <form id="profile-form" class="form-stack">
           <input type="hidden" id="profile-id">
 
           <section class="card parameter-cluster">
             <header class="cluster-heading">
-              <div><p class="cluster-kicker">General</p><h2>Profile</h2><p>Name and optional description of the controller connection.</p></div>
+              <div><p class="cluster-kicker" data-i18n="general">General</p><h2 data-i18n="profile">Profile</h2><p data-i18n="profileHelp">Name and optional description of the controller connection.</p></div>
             </header>
             <div class="parameter-list">
               <div class="parameter-row">
                 <label class="parameter-label" for="name">Name</label>
-                <div class="parameter-value"><input id="name" required maxlength="100" placeholder="e.g. West heating plant"></div>
+                <div class="parameter-value"><input id="name" required maxlength="100" placeholder="e.g. West heating plant" data-i18n="namePlaceholder" data-i18n-attr="placeholder"></div>
               </div>
               <div class="parameter-row">
-                <label class="parameter-label" for="description">Description</label>
-                <div class="parameter-value"><textarea id="description" rows="2" maxlength="1000" placeholder="Location or purpose"></textarea></div>
+                <label class="parameter-label" for="description" data-i18n="description">Description</label>
+                <div class="parameter-value"><textarea id="description" rows="2" maxlength="1000" placeholder="Location or purpose" data-i18n="descriptionPlaceholder" data-i18n-attr="placeholder"></textarea></div>
               </div>
             </div>
           </section>
 
           <section class="card parameter-cluster">
             <header class="cluster-heading">
-              <div><p class="cluster-kicker">Connection path</p><h2>Transport and target</h2><p>Only the connection from the Modbus Proxy to the controller.</p></div>
+              <div><p class="cluster-kicker" data-i18n="connectionPath">Connection path</p><h2 data-i18n="transportAndTarget">Transport and target</h2><p data-i18n="transportHelp">Only the connection from the Modbus Proxy to the controller.</p></div>
             </header>
             <div class="parameter-list">
               <div class="parameter-row">
-                <label class="parameter-label" for="transport">Transport</label>
-                <div class="parameter-value"><select id="transport"><option value="modbus_tcp">Modbus TCP</option><option value="rtu_over_tcp">RTU-over-TCP</option><option value="serial_rtu">Serial RTU</option></select></div>
+                <label class="parameter-label" for="transport" data-i18n="transport">Transport</label>
+                <div class="parameter-value"><select id="transport"><option value="modbus_tcp">Modbus TCP</option><option value="rtu_over_tcp">RTU-over-TCP</option><option value="serial_rtu" data-i18n="serialRtu">Serial RTU</option></select></div>
               </div>
               <div class="parameter-row" id="host-field">
                 <label class="parameter-label" for="host">Host</label>
                 <div class="parameter-value"><input id="host" placeholder="192.168.1.40"></div>
               </div>
               <div class="parameter-row" id="address-preference-field">
-                <label class="parameter-label" for="address-preference">IP address preference</label>
+                <label class="parameter-label" for="address-preference" data-i18n="ipPreference">IP address preference</label>
                 <div class="parameter-value">
                   <select id="address-preference">
-                    <option value="system">System order (default)</option>
-                    <option value="ipv4">Prefer IPv4</option>
-                    <option value="ipv6">Prefer IPv6</option>
+                    <option value="system" data-i18n="systemOrder">System order (default)</option>
+                    <option value="ipv4" data-i18n="preferIpv4">Prefer IPv4</option>
+                    <option value="ipv6" data-i18n="preferIpv6">Prefer IPv6</option>
                   </select>
-                  <small>For DNS names. If the first address family is unavailable, the proxy can try the other.</small>
+                  <small data-i18n="ipPreferenceHelp">For DNS names. If the first address family is unavailable, the proxy can try the other.</small>
                 </div>
               </div>
               <div class="parameter-row" id="port-field">
@@ -127,30 +133,30 @@
                 <div class="parameter-value"><input id="port" type="number" min="1" max="65535" value="502"></div>
               </div>
               <div class="parameter-row">
-                <label class="parameter-label" for="upstream-unit-id">Modbus unit ID</label>
+                <label class="parameter-label" for="upstream-unit-id" data-i18n="modbusUnit">Modbus unit ID</label>
                 <div class="parameter-value"><input id="upstream-unit-id" type="number" min="1" max="247" value="247"></div>
               </div>
             </div>
             <div id="serial-fields" class="parameter-list parameter-subgroup hidden">
-              <div class="subgroup-title">Serial interface</div>
+              <div class="subgroup-title" data-i18n="serialInterface">Serial interface</div>
               <div class="parameter-row">
-                <label class="parameter-label" for="serial-device">Device</label>
+                <label class="parameter-label" for="serial-device" data-i18n="device">Device</label>
                 <div class="parameter-value"><input id="serial-device" placeholder="/dev/ttyUSB0"></div>
               </div>
               <div class="parameter-row">
-                <label class="parameter-label" for="baudrate">Baudrate</label>
+                <label class="parameter-label" for="baudrate" data-i18n="baudRate">Baudrate</label>
                 <div class="parameter-value"><input id="baudrate" type="number" min="300" max="4000000" value="19200"></div>
               </div>
               <div class="parameter-row">
-                <label class="parameter-label" for="data-bits">Data bits</label>
+                <label class="parameter-label" for="data-bits" data-i18n="dataBits">Data bits</label>
                 <div class="parameter-value"><select id="data-bits"><option>8</option><option>7</option></select></div>
               </div>
               <div class="parameter-row">
-                <label class="parameter-label" for="parity">Parity</label>
-                <div class="parameter-value"><select id="parity"><option value="N">None</option><option value="E">Even</option><option value="O">Odd</option></select></div>
+                <label class="parameter-label" for="parity" data-i18n="parity">Parity</label>
+                <div class="parameter-value"><select id="parity"><option value="N" data-i18n="noParity">None</option><option value="E" data-i18n="even">Even</option><option value="O" data-i18n="odd">Odd</option></select></div>
               </div>
               <div class="parameter-row">
-                <label class="parameter-label" for="stop-bits">Stop bits</label>
+                <label class="parameter-label" for="stop-bits" data-i18n="stopBits">Stop bits</label>
                 <div class="parameter-value"><select id="stop-bits"><option>1</option><option>2</option></select></div>
               </div>
             </div>
@@ -158,69 +164,74 @@
 
           <section class="card parameter-cluster">
             <header class="cluster-heading">
-              <div><p class="cluster-kicker">Authorization</p><h2>Access</h2><p>The key is masked in the UI and is not actively inserted into protocol traffic.</p></div>
+              <div><p class="cluster-kicker" data-i18n="authorization">Authorization</p><h2 data-i18n="access">Access</h2><p data-i18n="accessHelp">The key is masked in the UI and is not actively inserted into protocol traffic.</p></div>
             </header>
             <div class="parameter-list">
               <div class="parameter-row">
-                <label class="parameter-label" for="access-key">Access key</label>
-                <div class="parameter-value"><div class="password-wrap"><input id="access-key" type="password" autocomplete="new-password" placeholder="Leave unchanged"><button type="button" id="toggle-key" aria-label="Show access key">Show</button></div><small id="key-state">Not configured</small></div>
+                <label class="parameter-label" for="access-key" data-i18n="accessKey">Access key</label>
+                <div class="parameter-value"><div class="password-wrap"><input id="access-key" type="password" autocomplete="new-password" placeholder="Leave unchanged" data-i18n="leaveKeyUnchanged" data-i18n-attr="placeholder"><button type="button" id="toggle-key" aria-label="Show access key">Show</button></div><small id="key-state" data-i18n="notConfigured">Not configured</small></div>
               </div>
               <div class="parameter-row">
-                <span class="parameter-label">Remove key</span>
-                <div class="parameter-value"><label class="checkbox"><input id="clear-key" type="checkbox"> Remove the stored key when saving</label></div>
+                <span class="parameter-label" data-i18n="removeKey">Remove key</span>
+                <div class="parameter-value"><label class="checkbox"><input id="clear-key" type="checkbox"> <span data-i18n="removeKeyHelp">Remove the stored key when saving</span></label></div>
               </div>
               <div class="parameter-row">
-                <label class="parameter-label" for="key-mode">Key mode</label>
-                <div class="parameter-value"><input id="key-mode" value="Pass-through" disabled><small>Active key injection remains disabled pending protocol confirmation.</small></div>
+                <label class="parameter-label" for="key-mode" data-i18n="keyMode">Key mode</label>
+                <div class="parameter-value"><input id="key-mode" value="Pass-through" disabled><small data-i18n="keyModeHelp">Active key injection remains disabled pending protocol confirmation.</small></div>
               </div>
             </div>
           </section>
 
           <section class="card parameter-cluster">
             <header class="cluster-heading">
-              <div><p class="cluster-kicker">Communication</p><h2>Timing</h2><p>Timeouts, minimum intervals, and delays for the controller connection.</p></div>
+              <div><p class="cluster-kicker" data-i18n="timingConfiguration">Timing configuration</p><h2 data-i18n="clientScheduling">Client scheduling</h2><p data-i18n="clientSchedulingHelp">Choose how long consecutive requests from a client stay together.</p></div>
             </header>
             <div class="parameter-list">
               <div class="parameter-row timing-preset-row">
-                <label class="parameter-label" for="timing-preset">Timing preset</label>
+                <label class="parameter-label" for="timing-preset" data-i18n="schedulingPreset">Scheduling preset</label>
                 <div class="parameter-value">
                   <select id="timing-preset" aria-describedby="timing-preset-description">
-                    <option value="single-client">Single-client polling</option>
-                    <option value="multi-client">Multi-client polling</option>
-                    <option value="trovis-view" selected>TROVIS-VIEW + up to 2 clients</option>
-                    <option value="custom">Custom</option>
+                    <option value="trovis-view" data-i18n="withTrovisView">Multi-client incl. TROVIS-VIEW</option>
+                    <option value="polling" selected data-i18n="withoutTrovisView">Multi-client without TROVIS-VIEW</option>
+                    <option value="custom" data-i18n="custom">Custom</option>
                   </select>
-                  <small id="timing-preset-description">For TROVIS-VIEW alone or with up to two background clients, such as Home Assistant and Node-RED.</small>
+                  <small id="timing-preset-description" data-i18n="pollingHelp">For polling clients such as Home Assistant and Node-RED.</small>
                 </div>
               </div>
-              <div class="parameter-row"><label class="parameter-label" for="connect-timeout">Connection timeout</label><div class="parameter-value input-with-unit"><input id="connect-timeout" type="number" min="0.1" max="120" step="0.1"><span>s</span></div></div>
-              <div class="parameter-row"><label class="parameter-label" for="response-timeout">Response timeout</label><div class="parameter-value input-with-unit"><input id="response-timeout" type="number" min="0.1" max="120" step="0.1"><span>s</span></div></div>
-              <div class="parameter-row"><label class="parameter-label" for="total-timeout">Total timeout</label><div class="parameter-value input-with-unit"><input id="total-timeout" type="number" min="0.1" max="300" step="0.1"><span>s</span><small>Includes waiting in the queue, controller communication, and retries.</small></div></div>
-              <div class="parameter-row"><label class="parameter-label" for="minimum-interval">Minimum interval</label><div class="parameter-value input-with-unit"><input id="minimum-interval" type="number" min="0" max="30" step="0.01"><span>s</span></div></div>
-              <div class="parameter-row"><label class="parameter-label" for="client-burst-idle">Client sequence idle window</label><div class="parameter-value input-with-unit"><input id="client-burst-idle" type="number" min="0" max="10" step="0.01"><span>s</span><small>Keeps consecutive requests from one client together; 0 disables client affinity.</small></div></div>
-              <div class="parameter-row"><label class="parameter-label" for="settle-delay">Connection settle delay</label><div class="parameter-value input-with-unit"><input id="settle-delay" type="number" min="0" max="30" step="0.01"><span>s</span></div></div>
-              <div class="parameter-row"><label class="parameter-label" for="reconnect-delay">Reconnect delay</label><div class="parameter-value input-with-unit"><input id="reconnect-delay" type="number" min="0" max="120" step="0.1"><span>s</span></div></div>
-              <div class="parameter-row"><label class="parameter-label" for="max-connection-age">Maximum connection age</label><div class="parameter-value input-with-unit"><input id="max-connection-age" type="number" min="0" max="86400" step="0.1"><span>s</span><small>After this age, the proxy renews the connection before the next client sequence. 0 disables scheduled renewal.</small></div></div>
+              <div class="parameter-row"><label class="parameter-label" for="client-burst-idle" data-i18n="clientWindow">Client sequence idle window</label><div class="parameter-value input-with-unit"><input id="client-burst-idle" type="number" min="0" max="10" step="any" required><span>s</span><small data-i18n="clientWindowHelp">Enter a window in seconds. At 0, waiting clients take turns after each request.</small></div></div>
             </div>
+            <details id="advanced-timing" class="advanced-timing">
+              <summary data-i18n="advancedSettings">Advanced communication settings</summary>
+              <div class="parameter-list">
+                <div class="parameter-row"><label class="parameter-label" for="connect-timeout" data-i18n="connectionTimeout">Connection timeout</label><div class="parameter-value input-with-unit"><input id="connect-timeout" type="number" min="0" max="120" step="any" required><span>s</span></div></div>
+                <div class="parameter-row"><label class="parameter-label" for="response-timeout" data-i18n="responseTimeout">Response timeout</label><div class="parameter-value input-with-unit"><input id="response-timeout" type="number" min="0" max="120" step="any" required><span>s</span></div></div>
+                <div class="parameter-row"><label class="parameter-label" for="total-timeout" data-i18n="totalTimeout">Total timeout</label><div class="parameter-value input-with-unit"><input id="total-timeout" type="number" min="0" max="300" step="any" required><span>s</span><small data-i18n="totalTimeoutHelp">Includes waiting in the queue, controller communication, and retries.</small></div></div>
+                <div class="parameter-row"><label class="parameter-label" for="minimum-interval" data-i18n="minimumInterval">Minimum request interval</label><div class="parameter-value input-with-unit"><input id="minimum-interval" type="number" min="0" max="30" step="any" required><span>s</span></div></div>
+                <div class="parameter-row"><label class="parameter-label" for="settle-delay" data-i18n="postConnect">Post-connect delay</label><div class="parameter-value input-with-unit"><input id="settle-delay" type="number" min="0" max="30" step="any" required><span>s</span></div></div>
+                <div class="parameter-row"><label class="parameter-label" for="reconnect-delay" data-i18n="preReconnect">Pre-reconnect delay</label><div class="parameter-value input-with-unit"><input id="reconnect-delay" type="number" min="0" max="120" step="any" required><span>s</span></div></div>
+                <div class="parameter-row"><label class="parameter-label" for="max-connection-age" data-i18n="maximumAge">Maximum TCP connection age</label><div class="parameter-value input-with-unit"><input id="max-connection-age" type="number" min="0" max="86400" step="any" required><span>s</span><small data-i18n="maximumAgeHelp">After this age, the proxy renews the connection before the next client sequence. 0 disables scheduled renewal.</small></div></div>
+              </div>
+            </details>
           </section>
 
           <section class="card parameter-cluster">
             <header class="cluster-heading">
-              <div><p class="cluster-kicker">Error handling</p><h2>Retries</h2><p>Number of safely permitted retry attempts.</p></div>
+              <div><p class="cluster-kicker" data-i18n="errorHandling">Error handling</p><h2 data-i18n="retries">Retries</h2><p data-i18n="retriesHelp">Number of safely permitted retry attempts.</p></div>
             </header>
             <div class="parameter-list">
-              <div class="parameter-row"><label class="parameter-label" for="read-retries">Read requests</label><div class="parameter-value"><input id="read-retries" type="number" min="0" max="10"></div></div>
-              <div class="parameter-row"><label class="parameter-label" for="write-retries">Write requests</label><div class="parameter-value"><input id="write-retries" type="number" min="0" max="3"><small>Only before requests proven not sent.</small></div></div>
+              <div class="parameter-row"><label class="parameter-label" for="read-retries" data-i18n="readRequests">Read requests</label><div class="parameter-value"><input id="read-retries" type="number" min="0" max="10"></div></div>
+              <div class="parameter-row"><label class="parameter-label" for="write-retries" data-i18n="writeRequests">Write requests</label><div class="parameter-value"><input id="write-retries" type="number" min="0" max="3"><small data-i18n="writeRetryHelp">Only before requests proven not sent.</small></div></div>
             </div>
           </section>
 
           <div id="form-message" class="form-message" role="status" aria-live="polite"></div>
-          <div class="form-actions"><button type="button" class="danger hidden" id="delete-profile">Delete</button><span></span><button type="button" class="secondary" id="test-profile">Test connection</button><button type="button" class="secondary hidden" id="activate-profile">Activate</button><button type="submit" class="primary">Save</button></div>
+          <div class="form-actions"><button type="button" class="danger hidden" id="delete-profile" data-i18n="deleteProfile">Delete</button><span></span><button type="button" class="secondary" id="test-profile" data-i18n="testConnection">Test connection</button><button type="button" class="secondary hidden" id="activate-profile" data-i18n="activateProfile">Activate</button><button type="submit" class="primary" data-i18n="save">Save</button></div>
         </form>
       </div>
     </section>
   </main>
-  <footer class="site-footer"><span id="release-version">Release 1.2.2</span><span aria-hidden="true"> · </span>Design by macsobeck</footer>
+  <footer class="site-footer"><span data-i18n="releaseLabel">Release</span> <span id="release-version">1.2.3</span><span aria-hidden="true"> · </span>Design by macsobeck</footer>
+  <script src="/i18n.js" defer></script>
   <script src="/app.js" defer></script>
 </body>
 </html>

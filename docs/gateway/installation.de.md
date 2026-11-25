@@ -143,14 +143,14 @@ für die Verbindung vom Modbus Proxy zum Regler ein:
    mit dem tatsächlichen Regler übereinstimmen.
 5. Speichern Sie optional den Zugriffsschlüssel. Er verbleibt im Pass-through-Modus und wird nicht
    in den Modbus-Datenverkehr eingefügt.
-6. Verwenden Sie `25 s` als Ausgangswert für **Maximum connection age**. Nach Ablauf erneuert
-   der Proxy die Verbindung vor der nächsten Abfragesequenz. Der Wert `0` deaktiviert die
-   geplante Erneuerung.
-7. Wählen Sie **Single-client polling**, wenn eine Anwendung abfragt, **Multi-client polling**
-   für mehrere abfragende Anwendungen oder **TROVIS-VIEW + up to 2 clients** zum Auslesen mit
-   TROVIS-VIEW. Der **Total timeout** von `16 s` umfasst auch die Wartezeit in der Warteschlange.
+6. Wählen Sie unter **Client scheduling** die Option **Multi-client incl. TROVIS-VIEW**,
+   wenn Sie TROVIS-VIEW einsetzen, oder **Multi-client without TROVIS-VIEW** für zyklische
+   Abfragen etwa aus Home Assistant und Node-RED. Unter **Custom** geben Sie eine eigene Dauer ein.
+7. Wenn Regler oder Adapter andere Timing-Werte benötigen, öffnen Sie **Advanced communication
+   settings**. Der **Total timeout** von `16 s` umfasst auch die Wartezeit in der Warteschlange.
+   **Maximum TCP connection age** von `25 s` plant die Erneuerung an der nächsten Sequenzgrenze.
    Details stehen unter [Timing-Voreinstellungen](configuration.md#timing-presets).
-8. Prüfen Sie die übrigen Zeitüberschreitungen, Anfrageabstände und Wiederholungswerte.
+8. Prüfen Sie die Grenzen für Wiederholungen bei Lese- und Schreibanfragen.
 9. Wählen Sie **Save**.
 10. Wählen Sie **Activate**, wenn dieses Profil noch nicht aktiv ist.
 

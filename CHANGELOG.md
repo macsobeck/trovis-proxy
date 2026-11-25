@@ -7,6 +7,22 @@ semantic versioning.
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-11-25
+
+### Added
+
+- The administration interface is available in English and German. English is the default,
+  and the language selector remembers the choice in the browser.
+
+### Changed
+
+- The scheduling selector offers **Multi-client incl. TROVIS-VIEW** (0.80 s),
+  **Multi-client without TROVIS-VIEW** (0.20 s), and **Custom** for a manually entered
+  client sequence window. Edit the controller and adapter timing under **Advanced communication
+  settings**.
+- New controller profiles start with 0.20 s. Existing configurations retain all stored timing
+  values and use 0.80 s for an omitted sequence window.
+
 ## [1.2.2] - 2026-11-24
 
 ### Added
@@ -126,8 +142,9 @@ semantic versioning.
 - Hardened the runtime image by upgrading operating-system packages, updating and removing the
   build-time package installer, and running the service as an unprivileged user.
 
-[Unreleased]: https://github.com/macsobeck/trovis-proxy/compare/v1.2.2...HEAD
-[1.2.2]: https://github.com/macsobeck/trovis-proxy/compare/v1.2.1...v1.2.2
+[Unreleased]: https://github.com/macsobeck/trovis-proxy/compare/v1.2.3...HEAD
+[1.2.3]: https://github.com/macsobeck/trovis-proxy/compare/32bc056...v1.2.3
+[1.2.2]: https://github.com/macsobeck/trovis-proxy/compare/v1.2.1...32bc056
 [1.2.1]: https://github.com/macsobeck/trovis-proxy/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/macsobeck/trovis-proxy/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/macsobeck/trovis-proxy/compare/v1.1.0...v1.1.1

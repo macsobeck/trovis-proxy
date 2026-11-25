@@ -8,6 +8,7 @@ import tempfile
 import unittest
 from collections.abc import Awaitable, Callable
 from pathlib import Path
+from statistics import mean
 from threading import Event
 from unittest.mock import Mock, patch
 
@@ -1010,26 +1011,30 @@ class ProxyTests(unittest.IsolatedAsyncioTestCase):
         await writer_a.wait_closed()
         await writer_b.wait_closed()
 
-    async def test_preset_idle_windows_allow_different_handoffs_after_a_gap(self) -> None:
+    async def test_scheduling_windows_across_short_and_long_client_pauses(self) -> None:
         first = bytes.fromhex("0300000001")
         follow_up = bytes.fromhex("0300010001")
         background = bytes.fromhex("0300020001")
-        reply = bytes.fromhex("0302002a")
-        order: list[bytes] = []
+        arrivals: dict[bytes, float] = {}
+        response_s = 0.01
 
         async def controller(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
             while True:
                 request = decode_rtu_adu(await reader.readexactly(8), 12)
-                order.append(request)
-                writer.write(encode_rtu_adu(12, reply))
+                arrivals[request] = asyncio.get_running_loop().time()
+                await asyncio.sleep(response_s)
+                writer.write(encode_rtu_adu(12, b"\x03\x02" + request[1:3]))
                 await writer.drain()
 
         async def poll(
             reader: asyncio.StreamReader, writer: asyncio.StreamWriter, txid: int, pdu: bytes
-        ) -> None:
+        ) -> tuple[float, float]:
+            started = asyncio.get_running_loop().time()
             writer.write(encode_tcp_adu(txid, 7, pdu))
             await writer.drain()
-            self.assertEqual(await read_tcp_adu(reader), ModbusTcpAdu(txid, 7, reply))
+            reply = await read_tcp_adu(reader)
+            self.assertEqual(reply, ModbusTcpAdu(txid, 7, b"\x03\x02" + pdu[1:3]))
+            return started, asyncio.get_running_loop().time() - started
 
         await self.start_rtu_controller(
             controller,
@@ -1042,16 +1047,23 @@ class ProxyTests(unittest.IsolatedAsyncioTestCase):
                 "max_connection_age_s": 0,
             },
         )
-        for idle_s, expected in (
-            (0.2, [first, background, follow_up]),
-            (0.8, [first, follow_up, background]),
+        for idle_s, gap_s, response_s, keeps_sequence in (
+            (0, 0.15, 0.01, False),
+            (0.1, 0.15, 0.01, False),
+            (0.2, 0.15, 0.01, True),
+            (0.2, 0.4, 0.01, False),
+            (0.8, 0.4, 0.01, True),
+            (0.8, 0.67, 0.01, True),
+            (0.2, 0.15, 0.08, True),
         ):
-            with self.subTest(idle_s=idle_s):
+            with self.subTest(idle_s=idle_s, gap_s=gap_s, response_s=response_s):
                 profile = self.store.active_profile()
                 assert profile is not None
-                profile.timing.client_burst_idle_s = idle_s
-                self.store.upsert_profile(profile.model_dump(), profile.id)
-                order.clear()
+                self.store.upsert_profile(
+                    {**profile.model_dump(), "timing": {"client_burst_idle_s": idle_s}},
+                    profile.id,
+                )
+                arrivals.clear()
                 reader_a, writer_a = await asyncio.open_connection(
                     "127.0.0.1", self.proxy.bound_port
                 )
@@ -1059,17 +1071,168 @@ class ProxyTests(unittest.IsolatedAsyncioTestCase):
                     "127.0.0.1", self.proxy.bound_port
                 )
                 try:
-                    async with asyncio.timeout(2), asyncio.TaskGroup() as clients:
-                        await poll(reader_a, writer_a, 1, first)
-                        clients.create_task(poll(reader_b, writer_b, 2, background))
-                        await asyncio.sleep(0.4)
-                        await poll(reader_a, writer_a, 3, follow_up)
-                    self.assertEqual(order, expected)
+                    async with asyncio.timeout(3), asyncio.TaskGroup() as clients:
+                        batch_start, first_rtt = await poll(reader_a, writer_a, 1, first)
+                        waiting = clients.create_task(poll(reader_b, writer_b, 2, background))
+                        await asyncio.sleep(gap_s)
+                        next_start, next_rtt = await poll(reader_a, writer_a, 3, follow_up)
+                    poll_start, poll_rtt = waiting.result()
+                    expected = (
+                        [first, follow_up, background]
+                        if keeps_sequence
+                        else [first, background, follow_up]
+                    )
+                    self.assertEqual(list(arrivals), expected)
+                    self.assertEqual(self.metrics.snapshot()["reconnects"], 0)
+                    self.assertEqual(self.metrics.snapshot()["timeouts"], 0)
+                    rtts = (first_rtt, poll_rtt, next_rtt)
+                    rate = 3 / (max(poll_start + poll_rtt, next_start + next_rtt) - batch_start)
+                    print(
+                        f"window={idle_s:.2f}s gap={gap_s:.2f}s response={response_s:.2f}s "
+                        f"mean={mean(rtts) * 1000:.1f}ms max={max(rtts) * 1000:.1f}ms "
+                        f"poll queue={(arrivals[background] - poll_start) * 1000:.1f}ms "
+                        f"batch={rate:.1f}req/s reconnects=0"
+                    )
                 finally:
                     writer_a.close()
                     writer_b.close()
                     await writer_a.wait_closed()
                     await writer_b.wait_closed()
+
+    async def test_single_client_pacing_and_renewal_at_idle_window_boundary(self) -> None:
+        arrivals: list[float] = []
+        connections: list[int] = []
+        read = bytes.fromhex("0300000001")
+        reply = bytes.fromhex("0302002a")
+
+        async def controller(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+            connections.append(len(arrivals))
+            while True:
+                self.assertEqual(decode_rtu_adu(await reader.readexactly(8), 12), read)
+                arrivals.append(asyncio.get_running_loop().time())
+                writer.write(encode_rtu_adu(12, reply))
+                await writer.drain()
+
+        async def poll(
+            reader: asyncio.StreamReader, writer: asyncio.StreamWriter, txid: int
+        ) -> float:
+            started = asyncio.get_running_loop().time()
+            writer.write(encode_tcp_adu(txid, 7, read))
+            await writer.drain()
+            self.assertEqual(
+                await asyncio.wait_for(read_tcp_adu(reader), 1),
+                ModbusTcpAdu(txid, 7, reply),
+            )
+            return asyncio.get_running_loop().time() - started
+
+        await self.start_rtu_controller(
+            controller,
+            timing={
+                "response_timeout_s": 1,
+                "total_request_timeout_s": 3,
+                "minimum_request_interval_s": 0.1,
+                "connect_settle_delay_s": 0,
+                "reconnect_delay_s": 0,
+                "max_connection_age_s": 25,
+            },
+        )
+        for idle_s, expected_renewal in ((0.1, 1), (0.2, 0), (0.8, 0)):
+            with self.subTest(idle_s=idle_s):
+                profile = self.store.active_profile()
+                assert profile is not None
+                self.store.upsert_profile(
+                    {**profile.model_dump(), "timing": {"client_burst_idle_s": idle_s}},
+                    profile.id,
+                )
+                reader, writer = await asyncio.open_connection("127.0.0.1", self.proxy.bound_port)
+
+                try:
+                    await poll(reader, writer, 1)
+                    old_reconnects = self.metrics.snapshot()["reconnects"]
+                    rtts = [await poll(reader, writer, 2)]
+                    self.assertGreaterEqual(arrivals[-1] - arrivals[-2], 0.095)
+                    await asyncio.sleep(0.15)
+                    rtts.append(await poll(reader, writer, 3))
+                    self.assertEqual(self.metrics.snapshot()["reconnects"], old_reconnects)
+                    self.router._connected_at -= 25
+                    await asyncio.sleep(0.15)
+                    before = len(connections)
+                    await poll(reader, writer, 4)
+                    self.assertEqual(len(connections) - before, expected_renewal)
+                    self.assertEqual(
+                        self.metrics.snapshot()["reconnects"] - old_reconnects, expected_renewal
+                    )
+                    print(
+                        f"single window={idle_s:.2f}s mean={mean(rtts) * 1000:.1f}ms "
+                        f"max={max(rtts) * 1000:.1f}ms renewal after aging={expected_renewal}"
+                    )
+                finally:
+                    writer.close()
+                    await writer.wait_closed()
+                    async with asyncio.timeout(1):
+                        while self.metrics.snapshot()["downstream_clients"]:
+                            await asyncio.sleep(0.001)
+                    await self.router.close()
+
+    async def test_continuous_polling_burst_can_exhaust_waiting_clients_budget(self) -> None:
+        owner_read = bytes.fromhex("0300000001")
+        waiting_read = bytes.fromhex("0300010001")
+        reply = bytes.fromhex("0302002a")
+        order: list[bytes] = []
+
+        async def controller(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+            while True:
+                order.append(decode_rtu_adu(await reader.readexactly(8), 12))
+                writer.write(encode_rtu_adu(12, reply))
+                await writer.drain()
+
+        await self.start_rtu_controller(
+            controller,
+            timing={
+                "response_timeout_s": 0.2,
+                "total_request_timeout_s": 0.45,
+                "client_burst_idle_s": 0.2,
+                "minimum_request_interval_s": 0,
+                "connect_settle_delay_s": 0,
+                "reconnect_delay_s": 0,
+            },
+        )
+        reader, writer = await asyncio.open_connection("127.0.0.1", self.proxy.bound_port)
+        waiting = None
+
+        async def poll(txid: int) -> None:
+            writer.write(encode_tcp_adu(txid, 7, owner_read))
+            await writer.drain()
+            self.assertEqual((await read_tcp_adu(reader)).pdu, reply)
+
+        loop = asyncio.get_running_loop()
+        try:
+            async with asyncio.timeout(2):
+                await poll(1)
+                started = loop.time()
+                waiting = asyncio.create_task(self.request(waiting_read))
+                txid = 2
+                while not waiting.done():
+                    await asyncio.sleep(0.03)
+                    await poll(txid)
+                    txid += 1
+                self.assertEqual((await waiting).pdu, bytes.fromhex("830b"))
+                self.assertGreater(len(order), 4)
+                self.assertNotIn(waiting_read, order)
+                self.assertEqual(self.metrics.snapshot()["timeouts"], 1)
+                self.assertEqual(self.metrics.snapshot()["reconnects"], 0)
+                print(
+                    "continuous polling: competing client timed out after "
+                    f"{loop.time() - started:.2f}s"
+                )
+        finally:
+            if waiting is not None and not waiting.done():
+                waiting.cancel()
+                await asyncio.gather(waiting, return_exceptions=True)
+            writer.close()
+            await writer.wait_closed()
+        self.assertEqual((await self.request(waiting_read)).pdu, reply)
+        self.assertEqual(order[-1], waiting_read)
 
     async def test_no_profile_returns_gateway_exception(self) -> None:
         await self.proxy.start()

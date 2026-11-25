@@ -18,7 +18,10 @@ button { cursor:pointer; }
 nav { display:flex; align-self:stretch; }
 .nav-button { padding:0 18px; border:0; border-bottom:3px solid transparent; color:#bdcec3; background:transparent; }
 .nav-button:hover,.nav-button.active { color:#fff; border-bottom-color:#7cab8c; }
-.health { margin-left:auto; display:flex; align-items:center; gap:8px; font-size:13px; color:#c4d3ca; }
+.topbar-tools { margin-left:auto; display:flex; align-items:center; gap:16px; }
+.language-select { width:auto; padding:7px 9px; font-size:13px; color:#fff; background:#10251a; border-color:#668374; color-scheme:dark; }
+.language-select:focus { border-color:#b2d6be; box-shadow:none; }
+.health { display:flex; align-items:center; gap:8px; font-size:13px; color:#c4d3ca; }
 .health-dot { width:9px; height:9px; border-radius:50%; background:#8a928d; }
 .health-dot.ok { background:#5dbe79; box-shadow:0 0 0 4px rgba(93,190,121,.13); }
 .health-dot.paused { background:#d79a45; box-shadow:0 0 0 4px rgba(215,154,69,.14); }
@@ -80,6 +83,9 @@ h2 { margin:0; font-size:20px; }
 .cluster-heading { min-height:86px; padding:20px 24px; display:flex; align-items:flex-start; justify-content:space-between; gap:20px; background:#fafbfa; border-bottom:1px solid var(--line); }
 .cluster-heading p:not(.cluster-kicker) { max-width:680px; margin:5px 0 0; color:var(--muted); font-size:13px; line-height:1.45; }
 .parameter-list { width:100%; }
+.advanced-timing { border-top:1px solid var(--line); }
+.advanced-timing > summary { padding:16px 24px; cursor:pointer; font-weight:700; }
+.advanced-timing[open] > summary { border-bottom:1px solid var(--line); }
 .parameter-row { display:grid; grid-template-columns:var(--parameter-label-width) minmax(0,1fr); column-gap:26px; align-items:start; padding:13px 24px; border-bottom:1px solid #e8ebe8; }
 .parameter-row:last-child { border-bottom:0; }
 .parameter-label { padding-top:10px; color:#34433a; font-size:13px; font-weight:700; line-height:1.35; text-align:left; }
@@ -111,7 +117,6 @@ input:disabled { background:#eef1ee; color:#637068; }
 @media(max-width:900px) {
   .topbar { height:auto; min-height:68px; flex-wrap:wrap; padding:14px 20px; gap:10px 22px; }
   .brand { min-width:0; flex:1; }
-  .health { order:2; }
   .topbar nav { order:3; width:100%; height:42px; }
   .nav-button { flex:1; }
   .status-columns,.profile-layout { grid-template-columns:1fr; }

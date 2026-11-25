@@ -141,13 +141,14 @@ Enter the settings for the connection from the Modbus Proxy to the controller:
    must match the actual controller.
 5. Optionally store the access key. It remains in pass-through mode and is not
    injected into Modbus traffic.
-6. Keep **Maximum connection age** at `25 s` as a starting point. After that age the proxy renews
-   the connection before the next client sequence. A value of `0` disables scheduled renewal.
-7. Choose **Single-client polling** for one application, **Multi-client polling** for several
-   polling applications, or **TROVIS-VIEW + up to 2 clients** for TROVIS-VIEW readouts. The
-   **Total timeout** of `16 s` includes time waiting in the queue. See
+6. In **Client scheduling**, choose **Multi-client incl. TROVIS-VIEW** when using TROVIS-VIEW,
+   or **Multi-client without TROVIS-VIEW** for polling apps like Home Assistant and Node-RED.
+   Choose **Custom** to enter your own sequence window.
+7. If the controller or adapter needs different timing, open **Advanced communication settings**.
+   The **Total timeout** of `16 s` includes queue time. The **Maximum TCP connection age** of
+   `25 s` schedules renewal at the next sequence boundary. See
    [timing presets](configuration.md#timing-presets).
-8. Review the remaining timeouts, request spacing, and retry values.
+8. Review the read and write retry limits.
 9. Select **Save**.
 10. Select **Activate** if this is not already the active profile.
 

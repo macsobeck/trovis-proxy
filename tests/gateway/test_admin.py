@@ -84,11 +84,11 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("listen_port", profile)
         self.assertNotIn("compatibility", profile)
         self.assertEqual(profile["timing"]["max_connection_age_s"], 25)
-        self.assertEqual(profile["timing"]["client_burst_idle_s"], 0.8)
+        self.assertEqual(profile["timing"]["client_burst_idle_s"], 0.2)
         self.assertEqual(profile["timing"]["total_request_timeout_s"], 16)
         _, status_body = await self.fetch("/api/status")
         self.assertNotIn("secret-value", status_body)
-        self.assertEqual(json.loads(status_body)["version"], "1.2.2")
+        self.assertEqual(json.loads(status_body)["version"], "1.2.3")
 
     async def test_forwarding_state_can_be_changed_and_is_reported(self) -> None:
         status, body = await self.fetch(
@@ -155,6 +155,12 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
     async def test_ui_has_controller_editor_but_no_downstream_editor(self) -> None:
         _, html = await self.fetch("/")
         self.assertIn('<html lang="en">', html)
+        self.assertIn('<option value="en" lang="en" selected>English</option>', html)
+        self.assertIn('<option value="de" lang="de">Deutsch</option>', html)
+        self.assertIn('<script src="/i18n.js" defer>', html)
+        _, translations = await self.fetch("/i18n.js")
+        self.assertIn('"controllerConnection": "Reglerverbindung"', translations)
+        self.assertIn('"custom": "Benutzerdefiniert"', translations)
         self.assertIn("TROVIS Modbus Proxy", html)
         self.assertNotIn("TROVIS Proxy Gateway", html)
         self.assertNotIn("TROVIS Communication Gateway", html)
@@ -164,7 +170,7 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('<h2>Modbus Proxy</h2>', html)
         self.assertNotIn('<h2>Gateway</h2>', html)
         self.assertIn("Design by macsobeck", html)
-        self.assertIn('<span id="release-version">Release 1.2.2</span>', html)
+        self.assertIn('<span id="release-version">1.2.3</span>', html)
         self.assertIn("TROVIS-VIEW Listener", html)
         self.assertIn('class="parameter-row"', html)
         self.assertIn('class="parameter-label"', html)
@@ -174,22 +180,38 @@ class AdminTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('id="max-connection-age"', html)
         self.assertIn('id="client-burst-idle"', html)
         self.assertIn('id="forwarding-toggle"', html)
-        self.assertIn('id="reset-counters">Reset counters</button>', html)
+        self.assertIn('id="reset-counters" data-i18n="resetCounters">Reset counters</button>', html)
         self.assertIn('id="reset-counters-message"', html)
         self.assertNotIn('id="refresh-status"', html)
         self.assertNotIn('id="disabled-request-policy"', html)
         self.assertNotIn('id="buffer-retention"', html)
         self.assertIn('id="timing-preset"', html)
         self.assertIn('id="address-preference"', html)
-        self.assertIn('<option value="system">System order (default)</option>', html)
-        self.assertIn('<option value="ipv4">Prefer IPv4</option>', html)
-        self.assertIn('<option value="ipv6">Prefer IPv6</option>', html)
-        self.assertIn('<option value="single-client">Single-client polling</option>', html)
-        self.assertIn('<option value="multi-client">Multi-client polling</option>', html)
         self.assertIn(
-            '<option value="trovis-view" selected>TROVIS-VIEW + up to 2 clients</option>', html
+            '<option value="system" data-i18n="systemOrder">System order (default)</option>', html
         )
-        self.assertIn('<option value="custom">Custom</option>', html)
-        self.assertNotIn("<details", html)
+        self.assertIn('<option value="ipv4" data-i18n="preferIpv4">Prefer IPv4</option>', html)
+        self.assertIn('<option value="ipv6" data-i18n="preferIpv6">Prefer IPv6</option>', html)
+        presets = html.split('<select id="timing-preset"', 1)[1].split("</select>", 1)[0]
+        self.assertEqual(
+            [line.strip() for line in presets.splitlines() if "<option" in line],
+            [
+                '<option value="trovis-view" data-i18n="withTrovisView">'
+                'Multi-client incl. TROVIS-VIEW</option>',
+                '<option value="polling" selected data-i18n="withoutTrovisView">'
+                'Multi-client without TROVIS-VIEW</option>',
+                '<option value="custom" data-i18n="custom">Custom</option>',
+            ],
+        )
+        self.assertNotIn('<option value="single-client">', html)
+        self.assertNotIn('<option value="multi-client">', html)
+        scheduling, advanced = html.split('<details id="advanced-timing"', 1)
+        self.assertIn('id="client-burst-idle"', scheduling)
+        advanced = advanced.split("</details>", 1)[0]
+        for field in (
+            "connect-timeout", "response-timeout", "total-timeout", "minimum-interval",
+            "settle-delay", "reconnect-delay", "max-connection-age",
+        ):
+            self.assertIn(f'id="{field}"', advanced)
         self.assertNotIn('id="listen-port"', html)
         self.assertNotIn('id="downstream-unit-id"', html)

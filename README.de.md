@@ -8,16 +8,14 @@ darunter Modelle der Baureihe SAMSON TROVIS 5573-1xxx. Er stellt den Anwendungen
 Modbus-TCP-Endpunkt bereit und verbindet sich über Modbus TCP, RTU-over-TCP oder Serial RTU
 mit dem Regler.
 
-> **Neu in 1.2.2**
+> **Neu in 1.2.3**
 >
-> - **Timing-Profile nach Einsatzszenario.** Zur Auswahl stehen **Single-client polling**,
->   **Multi-client polling**, **TROVIS-VIEW + up to 2 clients** und **Custom**. Multi-client
->   polling bedient wartende Clients früher. Das TROVIS-VIEW-Profil verwendet die bisherigen
->   Standardwerte.
-> - **Statuszähler zurücksetzen.** Anfragen, Wiederholungen, Timeouts und Neuverbindungen
->   lassen sich im laufenden Betrieb auf der automatisch aktualisierten Statusseite zurücksetzen.
+> - **Zweisprachige Oberfläche.** Englisch ist die Standardsprache. Die Kopfzeile bietet einen
+>   Wechsel zu Deutsch. Der Browser merkt sich die Auswahl.
+> - **Einfachere Client-Steuerung.** Wählen Sie Mehrclientbetrieb mit oder ohne TROVIS-VIEW
+>   oder ein eigenes Sequenzfenster. Die erweiterten Timing-Werte für den Regler stehen separat.
 >
-> Einzelheiten stehen im [Changelog](CHANGELOG.md#122---2026-11-24).
+> Einzelheiten stehen im [Changelog](CHANGELOG.md#123---2026-11-25).
 
 ```text
 Client-Anwendung → Modbus TCP → TROVIS Modbus Proxy → Modbus TCP / RTU-over-TCP / Serial RTU → Regler
@@ -100,8 +98,10 @@ weiteren Stärken entwickelt:
 - **Kontrollierte Wartungspausen:** Die Weiterleitung kann angehalten werden, ohne den Dienst zu
   stoppen. Neue und bereits wartende Anfragen werden mit der Modbus-Ausnahme `0x0B` abgewiesen;
   aktive Anfragen werden sicher beendet und nichts wird zur späteren Ausführung gespeichert.
-- **Praktische Timing-Profile:** Voreinstellungen für einen Client, mehrere abfragende Clients
-  oder TROVIS-VIEW mit weiteren Clients. Unter Custom lassen sich die Timingwerte einzeln einstellen.
+- **Client-Sequenzfenster:** Wählen Sie **Multi-client incl. TROVIS-VIEW**,
+  **Multi-client without TROVIS-VIEW** oder **Custom**. Das Timing für Regler und Adapter steht
+  unter **Advanced communication settings**. Details stehen in der
+  [Timing-Konfiguration](docs/gateway/configuration.md#timing-presets).
 - **Geschützte Schreibvorgänge:** Schreibvorgänge werden nach einem uneindeutigen Ergebnis niemals
   wiederholt. Dadurch sinkt das Risiko unbeabsichtigter Konfigurationsänderungen.
 - **Einfacher selbst gehosteter Betrieb:** Docker Compose, dauerhafte Konfiguration und eine
@@ -120,8 +120,7 @@ weiteren Stärken entwickelt:
 
 ![RTU-over-TCP-Reglerprofil des TROVIS Modbus Proxy](docs/images/controller-connection.png)
 
-*Reglerprofil mit RTU-over-TCP, Ziel, Modbus Unit ID und hervorgehobener Auswahl für die
-Timing-Voreinstellung.*
+*Reglerprofil aus v1.2.1 mit RTU-over-TCP, Ziel und Modbus Unit ID.*
 
 *Private Netzwerkadressen sind in beiden Oberflächenbeispielen anonymisiert.*
 

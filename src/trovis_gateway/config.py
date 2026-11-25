@@ -22,16 +22,19 @@ class TransportType(StrEnum):
 
 
 class TimingSettings(BaseModel):
+    """Communication settings and the independent client scheduling window."""
+
     model_config = ConfigDict(extra="forbid")
 
     connect_timeout_s: float = Field(default=3.0, gt=0, le=120)
     response_timeout_s: float = Field(default=2.0, gt=0, le=120)
     total_request_timeout_s: float = Field(default=16.0, gt=0, le=300)
     minimum_request_interval_s: float = Field(default=0.1, ge=0, le=30)
-    client_burst_idle_s: float = Field(default=0.8, ge=0, le=10)
     connect_settle_delay_s: float = Field(default=0.25, ge=0, le=30)
     reconnect_delay_s: float = Field(default=1.0, ge=0, le=120)
     max_connection_age_s: float = Field(default=25.0, ge=0, le=86_400)
+
+    client_burst_idle_s: float = Field(default=0.2, ge=0, le=10)
 
 
 class RetrySettings(BaseModel):

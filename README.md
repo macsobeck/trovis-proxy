@@ -8,15 +8,14 @@ controllers, including the SAMSON TROVIS 5573-1xxx series. It provides a stable 
 for Smart Home Applications and connects to the controller through Modbus TCP, RTU-over-TCP, or
 Serial RTU.
 
-> **New in 1.2.2**
+> **New in 1.2.3**
 >
-> - **Timing presets by use case.** Choose **Single-client polling**, **Multi-client polling**,
->   **TROVIS-VIEW + up to 2 clients**, or **Custom**. Multi-client polling gives waiting
->   clients an earlier turn. The TROVIS-VIEW preset uses the former Standard values.
-> - **Reset status counters.** Reset requests, retries, timeouts, and reconnects from the
->   automatically updated Status page while the proxy continues running.
+> - **Bilingual administration interface.** English is the default. Switch to German in the
+>   header. Your browser remembers the choice.
+> - **Simplified client scheduling.** Choose multi-client operation with or without TROVIS-VIEW,
+>   or set a custom sequence window. Advanced controller timing is configured separately.
 >
-> See the [changelog](CHANGELOG.md#122---2026-11-24) for details.
+> See the [changelog](CHANGELOG.md#123---2026-11-25) for details.
 
 ```text
 Client application → Modbus TCP → TROVIS Modbus Proxy → Modbus TCP / RTU-over-TCP / Serial RTU → controller
@@ -91,8 +90,10 @@ strengths:
 - **Controlled maintenance pauses:** Forwarding can be paused without stopping the service. New
   and already queued requests are rejected with Modbus exception `0x0B`; active requests finish
   safely, and nothing is stored for later execution.
-- **Practical timing presets:** Choose single-client polling, multi-client polling, or
-  TROVIS-VIEW with background clients. Custom lets you adjust individual timing values.
+- **Client scheduling:** Choose **Multi-client incl. TROVIS-VIEW**,
+  **Multi-client without TROVIS-VIEW**, or **Custom**. **Advanced communication settings**
+  control timing for the controller and adapter.
+  See [timing configuration](docs/gateway/configuration.md#timing-presets).
 - **Protected write operations:** Writes are never repeated after an ambiguous result, reducing
   the risk of unintended configuration changes.
 - **Simple self-hosted operation:** Docker Compose deployment, persistent configuration, and a
@@ -111,8 +112,7 @@ strengths:
 
 ![TROVIS Modbus Proxy RTU-over-TCP controller profile](docs/images/controller-connection.png)
 
-*Controller profile using RTU-over-TCP with its target, Modbus unit ID, and highlighted timing
-preset selector.*
+*Example controller profile from v1.2.1 showing RTU-over-TCP, the target, and Modbus unit ID.*
 
 *Private network addresses are anonymized in both interface examples.*
 

@@ -25,26 +25,41 @@ state are still reported. Events recorded after the reset appear in the new coun
 
 ## Timing presets
 
-The controller editor provides three scenario presets and **Custom**. Selecting a preset fills
-the timing fields. Retry settings are configured separately. Editing a timing field selects
-**Custom** automatically.
+Under **Client scheduling**, the selector controls the client sequence window.
 
-| Preset | Use it when | Client sequence idle window |
-|---|---|---:|
-| Single-client polling | One application polls directly, such as Home Assistant, Node-RED, ioBroker, or openHAB. | 0.10 s |
-| Multi-client polling | Several applications poll directly, such as Home Assistant and Node-RED, or openHAB and Telegraf. | 0.20 s |
-| TROVIS-VIEW + up to 2 clients | TROVIS-VIEW reads the controller alone or while one or two other clients poll in the background. | 0.80 s |
-| Custom | You want to set the values individually, for example to allow more time for a controller response. | Adjustable |
+| Scheduling preset | Client sequence window |
+|---|---:|
+| Multi-client incl. TROVIS-VIEW | 0.80 s |
+| Multi-client without TROVIS-VIEW | 0.20 s |
+| Custom | Enter 0–10 s |
 
-The three presets use the same connection timeout (3 s), response timeout (2 s), total timeout
-(16 s), minimum interval (0.10 s), settle delay (0.25 s), reconnect delay (1 s), and maximum
-connection age (25 s). The shorter window in **Multi-client polling** lets the next waiting client
-take its turn sooner. The longer window in **TROVIS-VIEW** keeps a readout sequence together over
-short pauses.
+New controller profiles start with **Multi-client without TROVIS-VIEW**. Selecting **Custom**
+keeps the current window as a starting point. Editing the window directly also selects
+**Custom**. When a profile is opened, the selector reflects its saved window.
 
-New profiles start with the existing defaults, shown as **TROVIS-VIEW + up to 2 clients**. Timing
-values in existing profiles are retained. The former **Standard** matches the TROVIS-VIEW preset.
-The former **Fast** and **Reliable** appear as **Custom**. To apply a preset, select it and save.
+The seven **Advanced communication settings** belong to the controller profile, so each
+controller or adapter can have its own values. Changing the scheduling preset edits only the
+window. Retry limits have their own controls.
+
+| Advanced setting | Default | Adjust when |
+|---|---:|---|
+| Connection timeout | 3 s | DNS, TCP connection setup, or opening a serial port needs more time. |
+| Response timeout | 2 s | A complete reply takes longer, for example with a slow link or large read. |
+| Total timeout | 16 s | Queueing, connection setup, pacing, and permitted retries need a different overall budget. Consider the client deadline. |
+| Minimum request interval | 0.10 s | The controller or serial adapter needs a different pause after a successful response. |
+| Post-connect delay | 0.25 s | The adapter needs time after connection, or RTU-over-TCP recovery needs a longer quiet interval. |
+| Pre-reconnect delay | 1.00 s | The endpoint needs a different interval between a failed exchange or scheduled close and reopening. |
+| Maximum TCP connection age | 25 s | The adapter has a different session lifetime. Set to 0 to disable scheduled renewal. |
+
+### Existing configurations
+
+Profiles saved by v1.2.1 and v1.2.2 retain their individual timing values, including old
+Single-client (0.10 s), Multi-client (0.20 s), TROVIS-VIEW (0.80 s), and custom values. A
+legacy file with an omitted window uses its previous default of 0.80 s. The persisted flat
+`profiles[].timing` object and schema remain compatible with both versions. Reading an
+existing file does not rewrite its timing values.
+
+See [timing analysis and validation](timing-validation.md) for the comparison and its limits.
 
 Each profile contains transport, TCP endpoint or serial parameters, upstream Modbus Unit ID,
 timeouts, pacing, retry limits, and an optional access key. The API returns only a boolean saying
@@ -75,11 +90,17 @@ connection to the adapter. The same preference applies to **Test connection**.
 Keep a configuration backup when reverting to an older release. Version 1.2.0 and earlier
 do not recognize the new per-profile `address_preference` field.
 
-The **Client sequence idle window** defaults to `0.8` seconds. After a request completes, the same
-downstream TCP connection keeps controller affinity for this long. Consecutive requests from
-the same client, such as TROVIS-VIEW, Home Assistant, Node-RED, or TROVIS 55 Pro, stay together
-during this window. Waiting clients are served in arrival order once the active client is idle. Set the value to `0` only to restore request-by-request arbitration. Clients must
-allow enough response time for a polling sequence already in progress.
+After the proxy completes a request, the same downstream TCP connection keeps its turn for
+the configured window. A follow-up request extends the sequence. Other connections are served
+in arrival order once the active connection is idle or disconnects. At 0, clients take turns
+after each request and the upstream exchange stays serialized. A continuously active client
+with gaps shorter than the window can keep its turn until other requests reach their total
+timeout. For independent polling where that occurs, a window of 0 allows request-by-request
+scheduling.
+
+The minimum request interval paces transmissions after each successful exchange. It can delay
+a request even at a window of 0. With a single client, the idle window does not itself delay
+forwarding, although it can affect when an aging TCP connection is renewed.
 
 **Total timeout** starts when the proxy accepts a complete client request. The budget covers queue
 time, request pacing, connection setup, recovery, and retries. A request that expires in the queue
@@ -93,8 +114,8 @@ exceed that age. The proxy closes it and observes the configured reconnect delay
 request of the next sequence. This age was chosen for the approximately 30-second session
 boundary observed in controller captures. Set the age to `0` to disable scheduled renewal.
 
-After an RTU-over-TCP error, the proxy observes **Reconnect delay** before opening a new
-connection. It then waits for a quiet interval equal to **Connection settle delay** (at least
+After an RTU-over-TCP error, the proxy observes **Pre-reconnect delay** before opening a new
+connection. It then waits for a quiet interval equal to **Post-connect delay** (at least
 50 ms), discarding any incoming bytes and restarting that interval. The total timeout bounds this
 recovery even if the adapter keeps sending data. Successful exchanges need no recovery wait.
 
