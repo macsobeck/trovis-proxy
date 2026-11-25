@@ -14,6 +14,9 @@ mit dem Regler.
 >   Wechsel zu Deutsch. Der Browser merkt sich die Auswahl.
 > - **Einfachere Client-Steuerung.** Wählen Sie Mehrclientbetrieb mit oder ohne TROVIS-VIEW
 >   oder ein eigenes Sequenzfenster. Die erweiterten Timing-Werte für den Regler stehen separat.
+> - **Zähler zurücksetzen.** Auf der Statusseite lassen sich die Zähler für Anfragen,
+>   Wiederholungen, Zeitüberschreitungen und Neuverbindungen im laufenden Betrieb
+>   zurücksetzen.
 >
 > Einzelheiten stehen im [Changelog](CHANGELOG.md#123---2026-11-25).
 

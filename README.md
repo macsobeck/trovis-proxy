@@ -14,6 +14,8 @@ Serial RTU.
 >   header. Your browser remembers the choice.
 > - **Simplified client scheduling.** Choose multi-client operation with or without TROVIS-VIEW,
 >   or set a custom sequence window. Advanced controller timing is configured separately.
+> - **Reset counters.** Use the button on the Status page to reset the request, retry, timeout,
+>   and reconnect counters while the proxy keeps running.
 >
 > See the [changelog](CHANGELOG.md#123---2026-11-25) for details.
 
