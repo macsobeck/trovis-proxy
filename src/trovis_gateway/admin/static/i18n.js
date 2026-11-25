@@ -103,7 +103,7 @@ const germanLabels = {
 };
 
 const messages = {
-  pollingHelp: ["For polling clients such as Home Assistant and Node-RED.", "Für zyklische Abfragen etwa aus Home Assistant und Node-RED."],
+  pollingHelp: ["For polling clients such as Home Assistant and Node-RED for instance.", "Für zyklische Abfragen etwa aus Home Assistant und Node-RED."],
   trovisViewHelp: ["Keeps TROVIS-VIEW readouts together while other clients poll.", "Hält TROVIS-VIEW-Auslesevorgänge zusammen, während andere Clients abfragen."],
   customHelp: ["Enter your own sequence window below.", "Gib unten ein eigenes Sequenzfenster ein."],
   keyConfigured: ["Access key configured", "Zugriffsschlüssel konfiguriert"],

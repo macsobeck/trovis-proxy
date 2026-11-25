@@ -22,6 +22,12 @@ semantic versioning.
   settings**.
 - New controller profiles start with 0.20 s. Existing configurations retain all stored timing
   values and use 0.80 s for an omitted sequence window.
+- Keep the administration header visible while scrolling on desktop displays. In the mobile
+  layout, the header scrolls with the page.
+- Use `trovis-proxy` as the Docker Compose service and container name. Run `docker compose down`
+  with the previous Compose file before switching to the new one.
+- Update the English and German README screenshots with the current status and timing interface
+  using example profile data.
 
 ## [1.2.2] - 2026-11-24
 

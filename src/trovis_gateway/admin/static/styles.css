@@ -1,4 +1,6 @@
 :root {
+  --topbar-height:72px;
+  scroll-padding-top:calc(var(--topbar-height) + 8px);
   --ink:#142018; --muted:#667168; --line:#d9ded9; --line-strong:#c7cec8;
   --paper:#fff; --wash:#f3f5f2; --green:#235d3a; --green-dark:#17462a;
   --green-soft:#e5f0e8; --amber:#a66517; --red:#a23b32;
@@ -10,7 +12,7 @@
 body { min-width:320px; min-height:100vh; margin:0; display:flex; flex-direction:column; }
 button,input,select,textarea { font:inherit; }
 button { cursor:pointer; }
-.topbar { height:72px; padding:0 32px; background:#10251a; color:#fff; display:flex; align-items:center; gap:36px; box-shadow:0 2px 12px rgba(0,0,0,.16); }
+.topbar { position:sticky; top:0; z-index:10; flex-shrink:0; height:var(--topbar-height); padding:0 32px; background:#10251a; color:#fff; display:flex; align-items:center; gap:36px; box-shadow:0 2px 12px rgba(0,0,0,.16); }
 .brand { display:flex; align-items:center; gap:12px; color:inherit; text-decoration:none; min-width:280px; }
 .brand-mark { width:38px; height:38px; display:grid; place-items:center; border:1px solid #88a893; border-radius:8px; font-size:13px; font-weight:800; letter-spacing:.08em; }
 .brand strong,.brand small { display:block; letter-spacing:.06em; }
@@ -71,7 +73,7 @@ h2 { margin:0; font-size:20px; }
 .notice strong { flex:none; }
 
 .profile-layout { display:grid; grid-template-columns:270px minmax(0,1fr); gap:20px; align-items:start; }
-.profile-list { padding:10px; min-height:180px; position:sticky; top:20px; }
+.profile-list { padding:10px; min-height:180px; position:sticky; top:calc(var(--topbar-height) + 20px); }
 .profile-item { width:100%; padding:14px; display:block; text-align:left; border:1px solid transparent; border-radius:8px; background:transparent; }
 .profile-item:hover,.profile-item.selected { background:#f1f5f2; border-color:#cedbd1; }
 .profile-item strong,.profile-item span { display:block; }
@@ -115,7 +117,8 @@ input:disabled { background:#eef1ee; color:#637068; }
   .timing-preset-row .parameter-label { padding-top:0; }
 }
 @media(max-width:900px) {
-  .topbar { height:auto; min-height:68px; flex-wrap:wrap; padding:14px 20px; gap:10px 22px; }
+  :root { scroll-padding-top:auto; }
+  .topbar { position:static; height:auto; min-height:68px; flex-wrap:wrap; padding:14px 20px; gap:10px 22px; }
   .brand { min-width:0; flex:1; }
   .topbar nav { order:3; width:100%; height:42px; }
   .nav-button { flex:1; }

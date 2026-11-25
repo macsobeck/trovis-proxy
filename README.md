@@ -106,15 +106,15 @@ strengths:
 
 ![TROVIS Modbus Proxy status dashboard for Modbus TCP clients and a SAMSON controller](docs/images/gateway-status.png)
 
-*Status overview for the Modbus TCP listener and the active controller connection.*
+*Status overview with forwarding control, resettable counters, and the language selector.*
 
 ### Controller connection
 
-![TROVIS Modbus Proxy RTU-over-TCP controller profile](docs/images/controller-connection.png)
+![TROVIS Modbus Proxy controller profile showing the scheduling preset and client sequence window](docs/images/controller-connection.png)
 
-*Example controller profile from v1.2.1 showing RTU-over-TCP, the target, and Modbus unit ID.*
+*Client scheduling with the Multi-client without TROVIS-VIEW preset and advanced communication settings.*
 
-*Private network addresses are anonymized in both interface examples.*
+*Both screenshots use an example profile and host name.*
 
 ![USR adapter configured for transparent RTU-over-TCP operation](docs/images/usr-adapter-settings.png)
 

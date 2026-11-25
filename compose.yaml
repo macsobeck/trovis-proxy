@@ -1,7 +1,8 @@
 name: trovis-proxy
 
 services:
-  gateway:
+  trovis-proxy:
+    container_name: trovis-proxy
     image: docker.io/macsobeck/trovis-proxy:latest
     restart: unless-stopped
     ports:

@@ -117,7 +117,7 @@ Der Health-Endpunkt sollte Folgendes zurückgeben:
 Wenn der Start fehlschlägt, prüfen Sie die Protokolle:
 
 ```bash
-docker compose logs --tail=100 gateway
+docker compose logs --tail=100 trovis-proxy
 ```
 
 ## 7. Administrationsoberfläche öffnen
@@ -203,7 +203,7 @@ um im laufenden Betrieb einen neuen Messzeitraum zu starten.
 Verfolgen Sie bei der Diagnose die laufenden Protokolle:
 
 ```bash
-docker compose logs -f gateway
+docker compose logs -f trovis-proxy
 ```
 
 Die aktuelle NAS-Compose-Konfiguration aktiviert mit `MODBUS_TRACE=1` die Aufzeichnung roher
@@ -223,7 +223,7 @@ dieses per Bind-Mount eingebundene Verzeichnis.
 Erstellen Sie nach der Konfiguration des Modbus Proxy eine Sicherung.
 
 ```bash
-docker compose exec -T gateway sh -c 'cat /data/config.json' > modbus-proxy-config-backup.json
+docker compose exec -T trovis-proxy sh -c 'cat /data/config.json' > modbus-proxy-config-backup.json
 chmod 600 modbus-proxy-config-backup.json
 ```
 
@@ -233,16 +233,18 @@ entsprechend.
 Stellen Sie eine Sicherung wie folgt wieder her:
 
 ```bash
-docker compose stop gateway
-docker compose run --rm --no-deps -T --entrypoint sh gateway \
+docker compose stop trovis-proxy
+docker compose run --rm --no-deps -T --entrypoint sh trovis-proxy \
   -c 'umask 077; cat > /data/config.json' < modbus-proxy-config-backup.json
 docker compose up -d
 ```
 
 ## 13. Installation aktualisieren
 
-Sichern Sie zuerst die Konfiguration. Aktualisieren Sie eine Standardinstallation auf das aktuelle
-Image mit:
+Sichern Sie zuerst die Konfiguration. Falls der Dienst in der bisherigen Compose-Datei
+`gateway` heißt, führen Sie vor der Aktualisierung mit dieser Datei `docker compose down` aus.
+So werden die Host-Ports für den umbenannten Dienst frei. Aktualisieren Sie anschließend
+die Standardinstallation auf das aktuelle Image:
 
 ```bash
 git pull --ff-only
@@ -255,7 +257,7 @@ Das per Bind-Mount eingebundene Verzeichnis `./data` bleibt mit dem Ersatzcontai
 
 ## 14. Serial RTU mit Docker
 
-Fügen Sie unter Linux innerhalb von `services.gateway` in `compose.yaml` Folgendes hinzu, um das
+Fügen Sie unter Linux innerhalb von `services.trovis-proxy` in `compose.yaml` Folgendes hinzu, um das
 serielle Gerät an den Container durchzureichen:
 
 ```yaml

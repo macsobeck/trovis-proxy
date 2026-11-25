@@ -115,7 +115,7 @@ The health endpoint should return:
 If startup fails, inspect the logs:
 
 ```bash
-docker compose logs --tail=100 gateway
+docker compose logs --tail=100 trovis-proxy
 ```
 
 ## 7. Open the administration website
@@ -200,7 +200,7 @@ measurement period while the proxy is running.
 Follow live logs when diagnosing communication:
 
 ```bash
-docker compose logs -f gateway
+docker compose logs -f trovis-proxy
 ```
 
 The current NAS Compose configuration enables raw Modbus PDU tracing with
@@ -220,7 +220,7 @@ Profiles are stored in `./data/config.json` on the Docker host and mounted as
 Create a backup after configuring the Modbus Proxy.
 
 ```bash
-docker compose exec -T gateway sh -c 'cat /data/config.json' > modbus-proxy-config-backup.json
+docker compose exec -T trovis-proxy sh -c 'cat /data/config.json' > modbus-proxy-config-backup.json
 chmod 600 modbus-proxy-config-backup.json
 ```
 
@@ -229,15 +229,17 @@ The backup contains the stored access key in clear text. Protect it accordingly.
 Restore a backup with:
 
 ```bash
-docker compose stop gateway
-docker compose run --rm --no-deps -T --entrypoint sh gateway \
+docker compose stop trovis-proxy
+docker compose run --rm --no-deps -T --entrypoint sh trovis-proxy \
   -c 'umask 077; cat > /data/config.json' < modbus-proxy-config-backup.json
 docker compose up -d
 ```
 
 ## 13. Update the installation
 
-Back up the configuration first. Update the standard installation to the latest image with:
+Back up the configuration first. If the existing Compose file uses the service name
+`gateway`, run `docker compose down` with that file before updating. This frees the host
+ports for the renamed service. Update the standard installation to the latest image with:
 
 ```bash
 git pull --ff-only
@@ -251,7 +253,7 @@ The bind-mounted `./data` directory remains attached to the replacement containe
 ## 14. Serial RTU with Docker
 
 On Linux, pass the serial device into the service by adding this under
-`services.gateway` in `compose.yaml`:
+`services.trovis-proxy` in `compose.yaml`:
 
 ```yaml
 devices:

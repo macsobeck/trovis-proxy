@@ -114,15 +114,15 @@ weiteren Stärken entwickelt:
 
 ![Statusübersicht des TROVIS Modbus Proxy für Modbus-TCP-Clients und einen SAMSON-Regler](docs/images/gateway-status.png)
 
-*Statusübersicht für den Modbus-TCP-Listener und die aktive Verbindung zum Regler.*
+*Statusübersicht mit Weiterleitungssteuerung, rücksetzbaren Zählern und Sprachauswahl.*
 
 ### Reglerverbindung
 
-![RTU-over-TCP-Reglerprofil des TROVIS Modbus Proxy](docs/images/controller-connection.png)
+![Reglerprofil des TROVIS Modbus Proxy mit Timing-Voreinstellung und Client-Sequenzfenster](docs/images/controller-connection.png)
 
-*Reglerprofil aus v1.2.1 mit RTU-over-TCP, Ziel und Modbus Unit ID.*
+*Client-Steuerung mit der Voreinstellung für mehrere Clients ohne TROVIS-VIEW und den erweiterten Kommunikationseinstellungen.*
 
-*Private Netzwerkadressen sind in beiden Oberflächenbeispielen anonymisiert.*
+*Beide Screenshots verwenden ein Beispielprofil und einen Beispiel-Hostnamen.*
 
 ![USR-Adapter für transparenten RTU-over-TCP-Betrieb](docs/images/usr-adapter-settings.png)
 
