@@ -8,14 +8,19 @@ controllers, including the SAMSON TROVIS 5573-1xxx series. It provides a stable 
 for Smart Home Applications and connects to the controller through Modbus TCP, RTU-over-TCP, or
 Serial RTU.
 
-> **New in 1.2.3**
+> **What’s new in 1.2.3**
 >
-> - **Bilingual administration interface.** English is the default. Switch to German in the
->   header. Your browser remembers the choice.
-> - **Simplified client scheduling.** Choose multi-client operation with or without TROVIS-VIEW,
->   or set a custom sequence window. Advanced controller timing is configured separately.
-> - **Reset counters.** Use the button on the Status page to reset the request, retry, timeout,
->   and reconnect counters while the proxy keeps running.
+> - **Bilingual web interface.** English is the default. Choose German in the header and your
+>   browser remembers the selection.
+> - **Desktop header stays visible.** Navigation and language selection stay accessible while
+>   scrolling. In the mobile layout, the header scrolls with the page.
+> - **Simpler timing presets.** The client sequence window is `0.80 s` with TROVIS-VIEW and
+>   `0.20 s` for polling. Choose **Custom** to enter your own value. Advanced controller and
+>   adapter settings are configured separately. New profiles start at `0.20 s`, and saved values
+>   are preserved. If an older configuration omits the window, it keeps the previous default
+>   of `0.80 s`.
+> - **Reset counters.** Reset request, retry, timeout, and reconnect counters from the Status
+>   page while the proxy is running.
 >
 > See the [changelog](CHANGELOG.md#123---2026-11-25) for details.
 

@@ -10,13 +10,17 @@ mit dem Regler.
 
 > **Neu in 1.2.3**
 >
-> - **Zweisprachige Oberfläche.** Englisch ist die Standardsprache. Die Kopfzeile bietet einen
->   Wechsel zu Deutsch. Der Browser merkt sich die Auswahl.
-> - **Einfachere Client-Steuerung.** Wählen Sie Mehrclientbetrieb mit oder ohne TROVIS-VIEW
->   oder ein eigenes Sequenzfenster. Die erweiterten Timing-Werte für den Regler stehen separat.
-> - **Zähler zurücksetzen.** Auf der Statusseite lassen sich die Zähler für Anfragen,
->   Wiederholungen, Zeitüberschreitungen und Neuverbindungen im laufenden Betrieb
->   zurücksetzen.
+> - **Zweisprachige Weboberfläche.** Englisch ist die Standardsprache. Die Sprachauswahl bietet
+>   auch Deutsch, und der Browser merkt sich die Einstellung.
+> - **Sichtbare Kopfzeile am Desktop.** Beim Scrollen bleiben Navigation und Sprachauswahl
+>   erreichbar. In der mobilen Ansicht scrollt die Kopfzeile mit der Seite.
+> - **Einfachere Timing-Voreinstellungen.** Das Client-Sequenzfenster beträgt mit TROVIS-VIEW
+>   `0,80 s` und für zyklische Abfragen `0,20 s`. Unter **Benutzerdefiniert** lässt sich ein
+>   eigener Wert eingeben. Die erweiterten Kommunikationseinstellungen für Regler und Adapter
+>   bleiben separat. Neue Profile beginnen mit `0,20 s`, gespeicherte Werte bleiben erhalten.
+>   Fehlt das Feld in einer älteren Konfiguration, gilt der bisherige Standard von `0,80 s`.
+> - **Zähler zurücksetzen.** Anfragen, Wiederholungen, Zeitüberschreitungen und Neuverbindungen
+>   lassen sich auf der Statusseite im laufenden Betrieb zurücksetzen.
 >
 > Einzelheiten stehen im [Changelog](CHANGELOG.md#123---2026-11-25).
 
